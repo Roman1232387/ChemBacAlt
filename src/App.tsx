@@ -10,6 +10,8 @@ import {Page401, Page403, Page404, Page500} from './pages/errors/ErrorPages';
 import {DashboardPage} from './pages/DashboardPage';
 import {LessonsPage} from './pages/LessonsPage';
 import {LessonDetailPage} from './pages/LessonDetailPage';
+import {TopicsPage} from './pages/TopicsPage';
+import {TopicDetailPage} from './pages/TopicDetailPage';
 import {TestsPage} from './pages/TestsPage';
 import {TakeTestPage} from './pages/TakeTestPage';
 import {MyResultsPage} from './pages/MyResultsPage';
@@ -36,6 +38,8 @@ export default function App() {
                             <Route path="/dashboard" element={<DashboardPage/>}/>
                             <Route path="/lectii" element={<LessonsPage/>}/>
                             <Route path="/lectii/:id" element={<LessonDetailPage/>}/>
+                            <Route path="/teme" element={<TopicsPage/>}/>
+                            <Route path="/teme/:id" element={<TopicDetailPage/>}/>
                             <Route path="/teste" element={<TestsPage/>}/>
                             <Route path="/teste/:id" element={<TakeTestPage/>}/>
                             <Route path="/rezultate" element={<MyResultsPage/>}/>
