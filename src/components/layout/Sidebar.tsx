@@ -9,6 +9,7 @@ const USER_NAV: NavItem[] = [
   { to: '/lectii',    icon: '◈', label: 'Lectii' },
   { to: '/teste',     icon: '◉', label: 'Teste' },
   { to: '/rezultate', icon: '◎', label: 'Rezultatele Mele' },
+  { to: '/teme',      icon: '📚', label: 'Teme BAC' },
 ];
 
 const ADMIN_NAV: NavItem[] = [
@@ -16,6 +17,7 @@ const ADMIN_NAV: NavItem[] = [
   { to: '/lectii',      icon: '◈', label: 'Lectii' },
   { to: '/teste',       icon: '◉', label: 'Teste' },
   { to: '/admin/teste', icon: '⬙', label: 'Admin – Teste' },
+  { to: '/teme',       icon: '📚', label: 'Teme BAC' },
 ];
 
 export function Sidebar() {
