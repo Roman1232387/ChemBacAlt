@@ -13,7 +13,7 @@ export function Header() {
           background: 'var(--teal-dim)', border: '1px solid rgba(0,212,170,0.3)',
           borderRadius: 'var(--r-md)', padding: '4px 12px',
           fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--teal)', fontWeight: 700,
-        }}>⚗ BAC 2025</div>
+        }}>📚 ChemBac</div>
       </div>
       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
         Platforma de Pregătire Bacalaureat Chimie
