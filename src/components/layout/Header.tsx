@@ -56,7 +56,7 @@ export function PublicHeader() {
   return (
     <header style={{
       padding: '20px 40px', borderBottom: '1px solid var(--border)',
-      display: 'flex', alignItems: 'center',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     }}>
       <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', opacity: 1 }}>
         <span style={{ fontSize: '1.8rem', color: 'var(--teal)' }}>⚗</span>
@@ -64,6 +64,9 @@ export function PublicHeader() {
           ChimieBAC
         </span>
       </Link>
+      <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+        Bacalaureat 2025
+      </span>
     </header>
   );
 }
