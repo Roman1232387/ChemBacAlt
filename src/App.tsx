@@ -6,6 +6,7 @@ import {ProtectedRoute, AdminRoute} from './routes/guards';
 
 // Pages
 import {LoginPage} from './pages/LoginPage';
+import {RegisterPage} from './pages/RegisterPage';
 import {Page401, Page403, Page404, Page500} from './pages/errors/ErrorPages';
 import {DashboardPage} from './pages/DashboardPage';
 import {LessonsPage} from './pages/LessonsPage';
@@ -25,6 +26,7 @@ export default function App() {
                     {/* ── Public routes ── */}
                     <Route element={<PublicLayout/>}>
                         <Route path="/login" element={<LoginPage/>}/>
+                        <Route path="/register" element={<RegisterPage/>}/>
                         <Route path="/401" element={<Page401/>}/>
                         <Route path="/403" element={<Page403/>}/>
                         <Route path="/500" element={<Page500/>}/>

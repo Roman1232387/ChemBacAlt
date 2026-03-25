@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -46,10 +47,12 @@ export function LoginPage() {
     } catch { /* error displayed via context */ }
   };
 
-  const fillDemo = (role: 'admin' | 'user') => {
+  const fillDemo = (role: 'admin' | 'user' | 'maria' | 'alexandru') => {
     clearError();
     if (role === 'admin') setForm({ email: 'admin@chimie-bac.ro', password: 'Admin123!' });
-    else setForm({ email: 'elev@chimie-bac.ro', password: 'Elev123!' });
+    else if (role === 'user') setForm({ email: 'elev@chimie-bac.ro', password: 'Elev123!' });
+    else if (role === 'maria') setForm({ email: 'maria.ion@liceu.ro', password: 'Maria2025!' });
+    else if (role === 'alexandru') setForm({ email: 'alexandru.dumitrescu@scoala.ro', password: 'Alex2025!' });
   };
 
   const fe = (f: keyof FormErrors) => (touched[f] ? errors[f] : undefined);
@@ -109,13 +112,16 @@ export function LoginPage() {
             </button>
           </form>
 
-          {/* Demo accounts */}
-          <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 10 }}>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, marginTop: 20, marginBottom: 10 }}>
               Conturi demo:
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {(['admin', 'user'] as const).map((role) => (
+              {[
+                { role: 'admin' as const, label: 'Admin', email: 'admin@chimie-bac.ro' },
+                { role: 'user' as const, label: 'Elev Demo', email: 'elev@chimie-bac.ro' },
+                { role: 'maria' as const, label: 'Maria Ion', email: 'maria.ion@liceu.ro' },
+                { role: 'alexandru' as const, label: 'Alexandru D.', email: 'alexandru.dumitrescu@scoala.ro' },
+              ].map(({ role, label, email }) => (
                 <button
                   key={role}
                   onClick={() => fillDemo(role)}
@@ -131,13 +137,25 @@ export function LoginPage() {
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}
                 >
                   <span className={`badge badge-${role === 'admin' ? 'amber' : 'teal'}`}>
-                    {role === 'admin' ? 'Admin' : 'Elev'}
+                    {label}
                   </span>
-                  {role === 'admin' ? 'admin@chimie-bac.ro' : 'elev@chimie-bac.ro'}
+                  {email}
                 </button>
               ))}
             </div>
-          </div>
+
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, marginTop: 20, marginBottom: 10 }}>
+              Contul tău:
+            </p>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
+              Dacă ai un cont înregistrat, folosește formularul de mai sus pentru autentificare.
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              Nu ai cont?{' '}
+              <Link to="/register" style={{ color: 'var(--teal)', textDecoration: 'none', fontWeight: 600 }}>
+                Creează-ți unul →
+              </Link>
+            </div>
         </div>
       </div>
     </div>
