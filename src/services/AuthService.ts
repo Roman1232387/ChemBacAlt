@@ -1,10 +1,9 @@
-import type { AuthUser, LoginCredentials } from '../models/User';
+import type { AuthUser, LoginCredentials, User } from '../models/User';
 import { mockUsers } from '../mock/users';
+import { delay, mayFail, hashPassword } from './ApiUtils';
 
 const STORAGE_KEY = 'chem_bac_user';
 const USERS_KEY = 'chem_bac_users';
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
-const mayFail = () => { if (Math.random() < 0.03) throw new Error('Eroare 500: Serviciul de autentificare nu raspunde.'); };
 
 export const AuthService = {
   async login(credentials: LoginCredentials): Promise<AuthUser> {

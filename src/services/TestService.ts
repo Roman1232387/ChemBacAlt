@@ -1,8 +1,7 @@
 import type { Test, TestFormData } from '../models/Test';
 import { mockTests } from '../mock/tests';
 
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
-const mayFail = () => { if (Math.random() < 0.03) throw new Error('Eroare 500: Serviciul de teste nu raspunde.'); };
+import { delay, mayFail } from './ApiUtils';
 
 let store: Test[] = [...mockTests];
 let nextId = 100;

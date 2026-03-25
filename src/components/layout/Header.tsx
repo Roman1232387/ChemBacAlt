@@ -46,7 +46,7 @@ export function Header() {
       </Link>
 
       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-        Platforma de Pregătire Bacalaureat Chimie
+        Simulator de Teste Chimie 2026
       </div>
     </header>
   );
