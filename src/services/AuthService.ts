@@ -1,6 +1,6 @@
-import type { AuthUser, LoginCredentials, User } from '../models/User';
+import type { AuthUser, LoginCredentials } from '../models/User';
 import { mockUsers } from '../mock/users';
-import { delay, mayFail, hashPassword } from './ApiUtils';
+import { delay, mayFail } from './ApiUtils';
 
 const STORAGE_KEY = 'chem_bac_user';
 const USERS_KEY = 'chem_bac_users';
@@ -25,9 +25,8 @@ export const AuthService = {
     mayFail();
     const allUsers = AuthService.getAllUsers();
 
-    // Check if email already exists
-    if (allUsers.some(u => u.email === userData.email)) {
-      throw new Error('Email-ul este deja înregistrat.');
+    if (allUsers.some((u) => u.email === userData.email)) {
+      throw new Error('Email-ul este deja inregistrat.');
     }
 
     const newUser = {
@@ -36,7 +35,7 @@ export const AuthService = {
       password: userData.password,
       name: userData.name,
       role: 'user' as const,
-      avatarInitials: userData.name.split(' ').map(n => n[0]).join('').toUpperCase(),
+      avatarInitials: userData.name.split(' ').map((n) => n[0]).join('').toUpperCase(),
       createdAt: new Date().toISOString(),
     };
 
