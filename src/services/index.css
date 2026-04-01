@@ -1,3 +1,8 @@
+/* ============================================================
+   ChimieBAC – Global Design System
+   Dark Navy + Electric Teal + Amber accents
+   Font: Playfair Display (headings) + Lato (body) + DM Mono
+   ============================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -292,7 +297,7 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
   border: 1px solid var(--border-active); border-radius: var(--r-xl);
   padding: 32px; margin-bottom: 32px; flex-wrap: wrap;
 }
-.welcome-banner__title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+.welcome-banner__title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
 
 /* ── Grids ── */
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px,1fr)); gap: 20px; }
@@ -309,7 +314,7 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
 .flex-wrap { flex-wrap: wrap; }
 .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-6 { gap: 24px; }
 .mt-2 { margin-top: 8px; } .mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; } .mt-8 { margin-top: 32px; }
-.mb-4 { margin-bottom: 16px; } .mb-6 { margin-bottom: 24px; }
+.mb-4 { margin-bottom: 16px; } .mb-6 { margin-bottom: 24px; } .mb-8 { margin-bottom: 32px; }
 .text-sm { font-size: 0.85rem; }
 .text-muted { color: var(--text-secondary); }
 .text-teal { color: var(--teal); }
@@ -320,6 +325,8 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
 .font-bold { font-weight: 700; }
 .w-full { width: 100%; }
 .text-center { text-align: center; }
+
+/* ── Welcome Banner ── */
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
@@ -332,3 +339,7 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
   .welcome-banner { flex-direction: column; }
   .modal { padding: 24px 20px; }
 }
+
+/* ── Topics Page ── */
+.topics-card { transition: border-color var(--t-base), box-shadow var(--t-base), transform var(--t-fast); }
+.topics-card:hover { border-color: var(--border-active); box-shadow: var(--teal-glow); transform: translateY(-2px); }
