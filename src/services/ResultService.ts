@@ -3,8 +3,7 @@ import type { UserAnswer } from '../models/Question';
 import type { Test } from '../models/Test';
 import { mockResults } from '../mock/results';
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const mayFail = () => { if (Math.random() < 0.05) throw new Error('Eroare 500: Serviciul de rezultate nu raspunde.'); };
+import { delay, mayFail } from './ApiUtils';
 
 let store: Result[] = [...mockResults];
 let nextId = 10;

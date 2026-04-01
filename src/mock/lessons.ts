@@ -176,4 +176,113 @@ export const mockLessons: Lesson[] = [
     createdAt: '2024-01-25T10:00:00Z',
     updatedAt: '2024-03-10T10:00:00Z',
   },
+  {
+    id: 'l6',
+    title: 'Chimie Organica: Grupari functionale si polimeri',
+    category: 'chimie-organica',
+    difficulty: 'intermediate',
+    description:
+      'Functional groups in organic compounds, basic reactivities, and polymer types with polymerization mechanisms.',
+    duration: 60,
+    tags: ['grupari functionale', 'polimeri', 'esteri', 'aminoacizi', 'polimerizare'],
+    sections: [
+      {
+        id: 's6-1',
+        title: 'Grupari functionale comune',
+        content:
+          'Alcoholii (-OH), eterii (R-O-R), aldehidele (-CHO), cetonele (C=O), acizii carboxilici (-COOH), esterii (-COOR), aminele (-NH2) si amidele (-CONH2) sunt grupari functionale centrale. Reactivitatea depinde de polaritate si posibilitati de formare legaturi hidrogen.',
+        formula:
+          'Etanol: CH3CH2OH  |  Acid acetic: CH3COOH  |  Acetona: CH3COCH3',
+      },
+      {
+        id: 's6-2',
+        title: 'Formarea esterilor (esterificare Fischer)',
+        content:
+          'Reactia unui acid carboxilic cu un alcool in prezenta acidului sulfuric ca catalizator duce la formarea unui ester si apa. Este o reactie de echilibru, adesea folosita pentru sintetizarea parfumurilor.',
+        formula: 'CH3COOH + C2H5OH <=> CH3COOC2H5 + H2O',
+      },
+      {
+        id: 's6-3',
+        title: 'Polimeri si mecanisme de polimerizare',
+        content:
+          'Polimerii pot fi de aditie (polietilena, polipropilena, PVC) sau de condensatie (poliesteri, nailon). Polimerizarea radicalica si policondensarea sunt mecanisme esentiale.',
+        formula:
+          'n CH2=CH2 ->(initiator) [-CH2-CH2-]n  |  n HO-CH2-CH2-OH + n HOOC-Ph-COOH -> [-O-CH2-CH2-O-CO-Ph-CO-]n + 2n H2O',
+      },
+    ],
+    createdAt: '2024-01-27T10:00:00Z',
+    updatedAt: '2024-03-12T10:00:00Z',
+  },
+  {
+    id: 'l7',
+    title: 'Chimie Anorganica: Oxiizi, hidroxizi si complexi coordinativi',
+    category: 'chimie-anorganica',
+    difficulty: 'intermediate',
+    description:
+      'Proprietatile oxidului, hidroxidului, formarea complexelor si tipuri de legaturi in chimia anorganica.',
+    duration: 55,
+    tags: ['oxizi', 'hidroxizi', 'complexi', 'coordinar', 'acid-baza'],
+    sections: [
+      {
+        id: 's7-1',
+        title: 'Oxizi si hidroxizi',
+        content:
+          'Oxizii metalici sunt bazici (ex: Na2O + H2O -> 2NaOH), oxidii nonmetalicii sunt acizi (SO2 + H2O -> H2SO3). Hidroxizii metalici pot fi precipitabile si au solubilitate variabila.',
+        formula:
+          'CaO + H2O -> Ca(OH)2  |  SO3 + H2O -> H2SO4  |  Fe(OH)3 (s) instabil in mediu acid',
+      },
+      {
+        id: 's7-2',
+        title: 'Formarea ligandilor si complexelor',
+        content:
+          'Ligandii neutri (NH3, H2O) si anioni (Cl-, CN-) se leaga la ionul central metalic pentru a forma complexi de coordonare. Un complex [Cu(NH3)4]2+ apare in solutii amoniacale ale Cu2+.',
+        formula:
+          'Cu2+ + 4 NH3 -> [Cu(NH3)4]2+  |  Fe3+ + 6 CN- -> [Fe(CN)6]3-',
+      },
+      {
+        id: 's7-3',
+        title: 'Teoria acid-baza Lewis si stabilitatea complexelor',
+        content:
+          'Un acid Lewis accepta un cuplu de electroni, baza Lewis donate; formarea complexelor este exemplu clasic. Constanta de formare beta indica stabilitatea complexului in solutie.',
+        formula: 'Cu2+ + 4 CN- <=> [Cu(CN)4]2-  (beta4)  |  Kf pentru [Ag(NH3)2]+ = 1.7e7',
+      },
+    ],
+    createdAt: '2024-01-30T10:00:00Z',
+    updatedAt: '2024-03-14T10:00:00Z',
+  },
+  {
+    id: 'l8',
+    title: 'Chimie Fizica: Cinética și echilibru chimic',
+    category: 'chimie-fizica',
+    difficulty: 'advanced',
+    description:
+      'Cinetica reactiilor, factorii care influenteaza viteza si legea actiunii maselor pentru echilibru chimic.',
+    duration: 50,
+    tags: ['cinetica', 'echilibru', 'Le Chatelier', 'rată', 'rendament'],
+    sections: [
+      {
+        id: 's8-1',
+        title: 'Rata de reactie si factori influentatori',
+        content:
+          'Rata de reactie depinde de concentratie, temperatura, suprafata de contact, catalizatori si presiune in cazul gazelor. Ecuatia generala: v = k [A]^m [B]^n.',
+        formula: 'v = k [NO2]^2  (pentru 2 NO2 -> N2O4) si k = A e^{-Ea/RT}',
+      },
+      {
+        id: 's8-2',
+        title: 'Echilibrul chimic si principiul lui Le Chatelier',
+        content:
+          'In sistemele inchise aflate in echilibru, perturbatiile de concentratie, temperatura sau presiune determina deplasarea echilibrului pentru a contracara modificarea.',
+        formula: 'Kc = [CO]^2 / ([CO2][H2]) pentru reacția CO2 + H2 <=> CO + H2O',
+      },
+      {
+        id: 's8-3',
+        title: 'Constanta de echilibru si factorul de reactie Q',
+        content:
+          'Comparand Q cu K putem determina directia de deplasare. Daca Q < K, reactioneaza spre producei; daca Q > K, reactioneaza spre reactanti.',
+        formula: 'Q = [CO]^2 / ([CO2][H2]) si K = 4.5 la 700K',
+      },
+    ],
+    createdAt: '2024-02-02T10:00:00Z',
+    updatedAt: '2024-03-16T10:00:00Z',
+  },
 ];

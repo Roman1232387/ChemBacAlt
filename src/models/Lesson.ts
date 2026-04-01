@@ -4,7 +4,8 @@ export type LessonCategory =
   | 'chimie-anorganica'
   | 'electrochimie'
   | 'termodinamica'
-  | 'cinetica';
+  | 'cinetica'
+  | 'chimie-fizica';
 
 export interface LessonSection {
   id: string;
@@ -38,4 +39,5 @@ export const CATEGORY_LABELS: Record<LessonCategory, string> = {
   electrochimie: 'Electrochimie',
   termodinamica: 'Termodinamica',
   cinetica: 'Cinetica',
+  'chimie-fizica': 'Chimie Fizica',
 };

@@ -1,8 +1,7 @@
 import type { Lesson } from '../models/Lesson';
 import { mockLessons } from '../mock/lessons';
 
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
-const mayFail = () => { if (Math.random() < 0.03) throw new Error('Eroare 500: Nu s-au putut incarca lectiile.'); };
+import { delay, mayFail } from './ApiUtils';
 
 const store: Lesson[] = [...mockLessons];
 
