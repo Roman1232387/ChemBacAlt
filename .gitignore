@@ -1,4 +1,20 @@
-node_modules
-dist
+# C# build
+**/bin/
+**/obj/
+*.user
+
+# IDE
+**/.idea/
+**/.vscode/
+
+# Frontend
+node_modules/
+dist/
+
+# Sensitive
 .env
-.env.local
+init.sql
+
+# Frontend cache
+**/.vite/
+**/node_modules/.cache/
