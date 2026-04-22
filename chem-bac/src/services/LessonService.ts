@@ -1,22 +1,32 @@
+import axiosInstance from './axiosInstance';
 import type { Lesson } from '../models/Lesson';
-import { mockLessons } from '../mock/lessons';
 
-import { delay, mayFail } from './ApiUtils';
-
-const store: Lesson[] = [...mockLessons];
+const mapLesson = (data: any): Lesson => ({
+  id: String(data.id),
+  title: data.title,
+  category: data.category,
+  difficulty: data.difficulty,
+  description: data.description,
+  duration: data.duration,
+  sections: (data.sections ?? []).map((s: any) => ({
+    id: String(s.id),
+    title: s.title,
+    content: s.content,
+    formula: s.formula,
+  })),
+  tags: [],
+  createdAt: data.createdAt,
+  updatedAt: data.updatedAt,
+});
 
 export const LessonService = {
   async getAll(): Promise<Lesson[]> {
-    await delay(600);
-    mayFail();
-    return [...store];
+    const response = await axiosInstance.get('/lesson/getAll');
+    return response.data.map(mapLesson);
   },
 
   async getById(id: string): Promise<Lesson> {
-    await delay(400);
-    mayFail();
-    const lesson = store.find((l) => l.id === id);
-    if (!lesson) throw new Error(`Lectia cu id "${id}" nu a fost gasita.`);
-    return { ...lesson };
+    const response = await axiosInstance.get(`/lesson?id=${id}`);
+    return mapLesson(response.data);
   },
 };

@@ -1,55 +1,39 @@
-import type { Test, TestFormData } from '../models/Test';
-import { mockTests } from '../mock/tests';
+import axiosInstance from './axiosInstance';
+import type { Test } from '../models/Test';
 
-import { delay, mayFail } from './ApiUtils';
-
-let store: Test[] = [...mockTests];
-let nextId = 100;
+const mapTest = (data: any): Test => ({
+  id: String(data.id),
+  title: data.title,
+  description: data.description,
+  lessonId: String(data.lessonId),
+  duration: data.duration,
+  passingScore: data.passingScore,
+  status: data.status,
+  createdBy: String(data.createdById),
+  createdAt: data.createdAt,
+  updatedAt: data.updatedAt,
+  questions: (data.questions ?? []).map((q: any) => ({
+    id: String(q.id),
+    text: q.text,
+    type: q.type,
+    explanation: q.explanation,
+    points: q.points,
+    options: (q.options ?? []).map((o: any) => ({
+      id: String(o.id),
+      text: o.text,
+      isCorrect: o.isCorrect,
+    })),
+  })),
+});
 
 export const TestService = {
   async getAll(): Promise<Test[]> {
-    await delay(700);
-    mayFail();
-    return [...store];
+    const response = await axiosInstance.get('/test/getAll');
+    return response.data.map(mapTest);
   },
 
   async getById(id: string): Promise<Test> {
-    await delay(400);
-    mayFail();
-    const test = store.find((t) => t.id === id);
-    if (!test) throw new Error(`Testul cu id "${id}" nu a fost gasit.`);
-    return { ...test, questions: [...test.questions] };
-  },
-
-  async create(data: TestFormData, createdBy: string): Promise<Test> {
-    await delay(800);
-    mayFail();
-    const newTest: Test = {
-      id: `t${++nextId}`,
-      ...data,
-      questions: [],
-      createdBy,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    store = [...store, newTest];
-    return { ...newTest };
-  },
-
-  async update(id: string, data: Partial<TestFormData>): Promise<Test> {
-    await delay(700);
-    mayFail();
-    const idx = store.findIndex((t) => t.id === id);
-    if (idx === -1) throw new Error(`Testul cu id "${id}" nu a fost gasit.`);
-    const updated: Test = { ...store[idx], ...data, updatedAt: new Date().toISOString() };
-    store = store.map((t) => (t.id === id ? updated : t));
-    return { ...updated };
-  },
-
-  async delete(id: string): Promise<void> {
-    await delay(600);
-    mayFail();
-    if (!store.some((t) => t.id === id)) throw new Error(`Testul cu id "${id}" nu exista.`);
-    store = store.filter((t) => t.id !== id);
+    const response = await axiosInstance.get(`/test?id=${id}`);
+    return mapTest(response.data);
   },
 };
