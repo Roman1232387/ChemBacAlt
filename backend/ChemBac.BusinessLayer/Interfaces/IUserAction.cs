@@ -8,7 +8,7 @@ public interface IUserAction
     List<UserResponseDto> GetAllUsersAction();
     UserResponseDto? GetUserByIdAction(int id);
     ActionResponce RegisterUserAction(UserRegisterDto data);
-    ActionResponce LoginUserAction(UserLoginDto data);
+    LoginResponseDto LoginUserAction(UserLoginDto data);
     ActionResponce UpdateUserAction(UserResponseDto data);
     ActionResponce DeleteUserAction(int id);
 }

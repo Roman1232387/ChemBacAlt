@@ -21,4 +21,8 @@ public class BusinessLogic
     {
         return new UserExecution();
     }
+    public IResultAction ResultAction()
+    {
+        return new ResultExecution();
+    }
 }

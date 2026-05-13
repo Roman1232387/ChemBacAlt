@@ -22,3 +22,9 @@ public class UserResponseDto
     public string AvatarInitials { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 }
+public class LoginResponseDto
+{
+    public bool IsSuccess { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public UserResponseDto? User { get; set; }
+}
