@@ -22,10 +22,8 @@ public class UserExecution : UserActions, IUserAction
         return RegisterUserActionExecution(data);
     }
 
-    public ActionResponce LoginUserAction(UserLoginDto data)
-    {
-        return LoginUserActionExecution(data);
-    }
+    public LoginResponseDto LoginUserAction(UserLoginDto data)
+        => LoginUserActionExecution(data);
 
     public ActionResponce UpdateUserAction(UserResponseDto data)
     {

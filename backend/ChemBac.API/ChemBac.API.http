@@ -1,0 +1,6 @@
+@ChemBac.API_HostAddress = http://localhost:5188
+
+GET {{ChemBac.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

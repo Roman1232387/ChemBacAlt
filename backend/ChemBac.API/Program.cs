@@ -33,6 +33,9 @@ using (var db = new LessonContext())
 using (var db = new TestContext())
     db.Database.EnsureCreated();
 
+using (var db = new ResultContext())
+     db.Database.EnsureCreated();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

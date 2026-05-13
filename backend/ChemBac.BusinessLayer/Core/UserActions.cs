@@ -63,19 +63,24 @@ public class UserActions
         return new ActionResponce { IsSuccess = true, Message = "Inregistrare reusita." };
     }
 
-    protected ActionResponce LoginUserActionExecution(UserLoginDto data)
-    {
-        User? user;
-        using (var db = new UserContext())
-        {
-            user = db.Users.FirstOrDefault(u => u.Email == data.Email);
-        }
+   protected LoginResponseDto LoginUserActionExecution(UserLoginDto data)
+   {
+       User? user;
+       using (var db = new UserContext())
+       {
+           user = db.Users.FirstOrDefault(u => u.Email == data.Email);
+       }
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(data.Password, user.PasswordHash))
-            return new ActionResponce { IsSuccess = false, Message = "Email sau parola incorecte." };
+       if (user == null || !BCrypt.Net.BCrypt.Verify(data.Password, user.PasswordHash))
+           return new LoginResponseDto { IsSuccess = false, Message = "Email sau parola incorecte." };
 
-        return new ActionResponce { IsSuccess = true, Message = "Autentificare reusita." };
-    }
+       return new LoginResponseDto
+       {
+           IsSuccess = true,
+           Message = "Autentificare reusita.",
+           User = MapToDto(user)
+       };
+   }
 
     protected ActionResponce UpdateUserActionExecution(UserResponseDto data)
     {
