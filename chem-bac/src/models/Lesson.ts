@@ -27,6 +27,15 @@ export interface Lesson {
   updatedAt: string;
 }
 
+export interface LessonFormData {
+  title: string;
+  category: LessonCategory;
+  difficulty: LessonDifficulty;
+  description: string;
+  duration: number;
+  sections: LessonSection[];
+}
+
 export const DIFFICULTY_LABELS: Record<LessonDifficulty, string> = {
   beginner: 'Initiere',
   intermediate: 'Mediu',
