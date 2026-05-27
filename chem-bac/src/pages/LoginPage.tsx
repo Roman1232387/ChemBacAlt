@@ -53,12 +53,10 @@ export function LoginPage() {
     } catch {}
   };
 
-  const fillDemo = (role: 'admin' | 'user' | 'maria' | 'alexandru') => {
+  const fillDemo = (role: 'admin' | 'user') => {
     clearError();
     if (role === 'admin') setForm({ email: 'admin@chimie-bac.ro', password: 'Admin123!' });
-    else if (role === 'user') setForm({ email: 'elev@chimie-bac.ro', password: 'Elev123!' });
-    else if (role === 'maria') setForm({ email: 'maria.ion@liceu.ro', password: 'Maria2025!' });
-    else setForm({ email: 'alexandru.dumitrescu@scoala.ro', password: 'Alex2025!' });
+    else setForm({ email: 'elev@chimie-bac.ro', password: 'Elev123!' });
   };
 
   const fe = (f: keyof FormErrors) => (touched[f] ? errors[f] : undefined);
@@ -198,8 +196,6 @@ export function LoginPage() {
             {[
               { role: 'admin' as const, label: 'Admin', email: 'admin@chimie-bac.ro' },
               { role: 'user' as const, label: 'Elev Demo', email: 'elev@chimie-bac.ro' },
-              { role: 'maria' as const, label: 'Maria Ion', email: 'maria.ion@liceu.ro' },
-              { role: 'alexandru' as const, label: 'Alexandru D.', email: 'alexandru.dumitrescu@scoala.ro' },
             ].map(({ role, label, email }) => (
               <button
                 key={role}
