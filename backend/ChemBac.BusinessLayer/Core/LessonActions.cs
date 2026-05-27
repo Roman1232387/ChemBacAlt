@@ -56,6 +56,9 @@ public class LessonActions
 
     protected ActionResponce CreateLessonActionExecution(LessonDto data)
     {
+        var contentValidation = ValidateLessonContent(data);
+        if (!contentValidation.IsSuccess) return contentValidation;
+
         var validation = ValidateLessonTitle(data.Title);
         if (!validation.IsSuccess) return validation;
 
@@ -88,6 +91,9 @@ public class LessonActions
 
     protected ActionResponce UpdateLessonActionExecution(LessonDto data)
     {
+        var contentValidation = ValidateLessonContent(data);
+        if (!contentValidation.IsSuccess) return contentValidation;
+
         var existing = GetLessonEntityById(data.Id);
         if (existing == null)
             return new ActionResponce { IsSuccess = false, Message = "Lectia nu a fost gasita." };
@@ -156,6 +162,26 @@ public class LessonActions
             return new ActionResponce { IsSuccess = false, Message = "O lectie cu acest titlu exista deja." };
 
         return new ActionResponce { IsSuccess = true, Message = "Titlu valid." };
+    }
+
+    private static ActionResponce ValidateLessonContent(LessonDto data)
+    {
+        if (string.IsNullOrWhiteSpace(data.Title) || data.Title.Trim().Length < 5)
+            return new ActionResponce { IsSuccess = false, Message = "Titlul lectiei trebuie sa aiba minim 5 caractere." };
+
+        if (string.IsNullOrWhiteSpace(data.Description) || data.Description.Trim().Length < 10)
+            return new ActionResponce { IsSuccess = false, Message = "Descrierea lectiei trebuie sa aiba minim 10 caractere." };
+
+        if (data.Duration < 5)
+            return new ActionResponce { IsSuccess = false, Message = "Durata lectiei trebuie sa fie de minim 5 minute." };
+
+        if (data.Sections.Count == 0)
+            return new ActionResponce { IsSuccess = false, Message = "Lectia trebuie sa contina cel putin o sectiune." };
+
+        if (data.Sections.Any(s => string.IsNullOrWhiteSpace(s.Title) || string.IsNullOrWhiteSpace(s.Content)))
+            return new ActionResponce { IsSuccess = false, Message = "Fiecare sectiune trebuie sa aiba titlu si continut." };
+
+        return new ActionResponce { IsSuccess = true, Message = "Continut valid." };
     }
 
     private static LessonDto MapToDto(Lesson l) => new LessonDto
