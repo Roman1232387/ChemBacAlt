@@ -20,22 +20,43 @@ public class ResultsController : ControllerBase
     [HttpGet("getByUser")]
     public IActionResult GetByUser(int userId)
     {
-        var results = _resultAction.GetResultsByUserAction(userId);
-        return Ok(results);
+        try
+        {
+            var results = _resultAction.GetResultsByUserAction(userId);
+            return Ok(results);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Eroare BD: {ex.Message}" });
+        }
     }
 
     [HttpGet]
     public IActionResult GetById(int id)
     {
-        var result = _resultAction.GetResultByIdAction(id);
-        if (result == null) return NotFound(new { message = "Rezultatul nu a fost gasit." });
-        return Ok(result);
+        try
+        {
+            var result = _resultAction.GetResultByIdAction(id);
+            if (result == null) return NotFound(new { message = "Rezultatul nu a fost gasit." });
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Eroare BD: {ex.Message}" });
+        }
     }
 
     [HttpPost]
     public IActionResult Submit([FromBody] ResultDto data)
     {
-        var response = _resultAction.SubmitResultAction(data);
-        return Ok(response);
+        try
+        {
+            var response = _resultAction.SubmitResultAction(data);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Eroare BD: {ex.Message}" });
+        }
     }
 }

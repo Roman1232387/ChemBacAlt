@@ -21,6 +21,12 @@ public class BusinessLogic
     {
         return new UserExecution();
     }
+
+    public IAuthAction AuthAction()
+    {
+        return new AuthExecution();
+    }
+
     public IResultAction ResultAction()
     {
         return new ResultExecution();
