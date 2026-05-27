@@ -20,6 +20,7 @@ export interface TestFormData {
   title: string;
   description: string;
   lessonId: string;
+  questions: Question[];
   duration: number;
   passingScore: number;
   status: TestStatus;

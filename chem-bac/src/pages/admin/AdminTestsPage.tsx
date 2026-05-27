@@ -4,10 +4,11 @@ import { LessonService } from '../../services/LessonService';
 import { useAuth } from '../../hooks/useAuth';
 import type { Test, TestFormData, TestStatus } from '../../models/Test';
 import type { Lesson } from '../../models/Lesson';
+import type { QuestionType } from '../../models/Question';
 import { TEST_STATUS_LABELS } from '../../models/Test';
 
 // ─── Form Validation ──────────────────────────────────────────────────────────
-interface FE { title?: string; description?: string; lessonId?: string; duration?: string; passingScore?: string; }
+interface FE { title?: string; description?: string; lessonId?: string; duration?: string; passingScore?: string; questions?: string; }
 
 function validateForm(d: TestFormData): FE {
   const e: FE = {};
@@ -18,10 +19,41 @@ function validateForm(d: TestFormData): FE {
   if (!d.lessonId) e.lessonId = 'Selectati o lectie.';
   if (d.duration < 5 || d.duration > 180) e.duration = 'Durata trebuie sa fie intre 5 si 180 de minute.';
   if (d.passingScore < 10 || d.passingScore > 100) e.passingScore = 'Scorul de promovare trebuie sa fie intre 10% si 100%.';
+  if (d.questions.length === 0) e.questions = 'Adaugati cel putin o intrebare.';
+  else {
+    const invalidIndex = d.questions.findIndex((q) =>
+      !q.text.trim() ||
+      q.points < 1 ||
+      q.options.length < 2 ||
+      q.options.some((o) => !o.text.trim()) ||
+      !q.options.some((o) => o.isCorrect)
+    );
+    if (invalidIndex >= 0) e.questions = `Intrebarea ${invalidIndex + 1} trebuie sa aiba text, minim doua optiuni si raspuns corect.`;
+  }
   return e;
 }
 
-const emptyForm = (): TestFormData => ({ title: '', description: '', lessonId: '', duration: 30, passingScore: 60, status: 'draft' });
+const newQuestion = () => ({
+  id: `tmp-${Date.now()}`,
+  text: '',
+  type: 'single' as QuestionType,
+  explanation: '',
+  points: 1,
+  options: [
+    { id: `tmp-${Date.now()}-1`, text: '', isCorrect: true },
+    { id: `tmp-${Date.now()}-2`, text: '', isCorrect: false },
+  ],
+});
+
+const emptyForm = (): TestFormData => ({
+  title: '',
+  description: '',
+  lessonId: '',
+  questions: [newQuestion()],
+  duration: 30,
+  passingScore: 60,
+  status: 'draft'
+});
 
 // ─── TestModal ─────────────────────────────────────────────────────────────────
 interface TestModalProps {
@@ -35,7 +67,7 @@ interface TestModalProps {
 function TestModal({ editTest, lessons, onSave, onClose, isSaving }: TestModalProps) {
   const [form, setForm] = useState<TestFormData>(
     editTest
-      ? { title: editTest.title, description: editTest.description, lessonId: editTest.lessonId, duration: editTest.duration, passingScore: editTest.passingScore, status: editTest.status }
+      ? { title: editTest.title, description: editTest.description, lessonId: editTest.lessonId, questions: editTest.questions.length ? editTest.questions : [newQuestion()], duration: editTest.duration, passingScore: editTest.passingScore, status: editTest.status }
       : emptyForm()
   );
   const [errors,  setErrors]  = useState<FE>({});
@@ -51,6 +83,64 @@ function TestModal({ editTest, lessons, onSave, onClose, isSaving }: TestModalPr
     setTouched((p) => ({ ...p, [(e.target as HTMLInputElement).name]: true }));
   };
   const fe = (f: keyof FE) => touched[f] ? errors[f] : undefined;
+
+  const updateQuestions = (questions: TestFormData['questions']) => {
+    const next = { ...form, questions };
+    setForm(next);
+    setErrors(validateForm(next));
+  };
+
+  const updateQuestion = (questionId: string, patch: Partial<TestFormData['questions'][number]>) => {
+    updateQuestions(form.questions.map((q) => {
+      if (q.id !== questionId) return q;
+      const updated = { ...q, ...patch };
+      if (patch.type && patch.type !== 'multiple') {
+        let foundCorrect = false;
+        updated.options = updated.options.map((o) => {
+          if (o.isCorrect && !foundCorrect) {
+            foundCorrect = true;
+            return o;
+          }
+          return { ...o, isCorrect: false };
+        });
+        if (!foundCorrect && updated.options[0]) updated.options[0] = { ...updated.options[0], isCorrect: true };
+      }
+      return updated;
+    }));
+  };
+
+  const updateOption = (questionId: string, optionId: string, text: string) => {
+    updateQuestions(form.questions.map((q) => q.id === questionId
+      ? { ...q, options: q.options.map((o) => o.id === optionId ? { ...o, text } : o) }
+      : q));
+  };
+
+  const toggleCorrect = (questionId: string, optionId: string) => {
+    updateQuestions(form.questions.map((q) => {
+      if (q.id !== questionId) return q;
+      return {
+        ...q,
+        options: q.options.map((o) => q.type === 'multiple'
+          ? o.id === optionId ? { ...o, isCorrect: !o.isCorrect } : o
+          : { ...o, isCorrect: o.id === optionId })
+      };
+    }));
+  };
+
+  const addOption = (questionId: string) => {
+    updateQuestions(form.questions.map((q) => q.id === questionId
+      ? { ...q, options: [...q.options, { id: `tmp-${Date.now()}`, text: '', isCorrect: false }] }
+      : q));
+  };
+
+  const removeOption = (questionId: string, optionId: string) => {
+    updateQuestions(form.questions.map((q) => {
+      if (q.id !== questionId || q.options.length <= 2) return q;
+      const options = q.options.filter((o) => o.id !== optionId);
+      if (!options.some((o) => o.isCorrect)) options[0] = { ...options[0], isCorrect: true };
+      return { ...q, options };
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,6 +207,97 @@ function TestModal({ editTest, lessons, onSave, onClose, isSaving }: TestModalPr
                 <option value="published">Publicat</option>
                 <option value="archived">Arhivat</option>
               </select>
+            </div>
+
+            <div className="form-group">
+              <div className="flex justify-between items-center" style={{ marginBottom: 10 }}>
+                <label className="form-label" style={{ margin: 0 }}>Intrebari *</label>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => updateQuestions([...form.questions, newQuestion()])}>
+                  + Intrebare
+                </button>
+              </div>
+              {fe('questions') && <span className="form-error">⚠ {fe('questions')}</span>}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 10 }}>
+                {form.questions.map((question, qIndex) => (
+                  <div key={question.id} className="card" style={{ padding: 14, background: 'var(--bg-elevated)' }}>
+                    <div className="flex justify-between items-center" style={{ marginBottom: 12 }}>
+                      <strong>Intrebarea {qIndex + 1}</strong>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        disabled={form.questions.length === 1}
+                        onClick={() => updateQuestions(form.questions.filter((q) => q.id !== question.id))}
+                      >
+                        Sterge
+                      </button>
+                    </div>
+                    <div className="form-group">
+                      <input
+                        className="form-input"
+                        value={question.text}
+                        onChange={(e) => updateQuestion(question.id, { text: e.target.value })}
+                        placeholder="Textul intrebarii"
+                      />
+                    </div>
+                    <div className="grid-form-2">
+                      <select
+                        className="form-input"
+                        value={question.type}
+                        onChange={(e) => updateQuestion(question.id, { type: e.target.value as QuestionType })}
+                      >
+                        <option value="single">Un singur raspuns</option>
+                        <option value="multiple">Raspuns multiplu</option>
+                        <option value="true-false">Adevarat / Fals</option>
+                      </select>
+                      <input
+                        className="form-input"
+                        type="number"
+                        min={1}
+                        value={question.points}
+                        onChange={(e) => updateQuestion(question.id, { points: Number(e.target.value) })}
+                        placeholder="Puncte"
+                      />
+                    </div>
+                    <textarea
+                      className="form-input"
+                      style={{ marginTop: 10 }}
+                      rows={2}
+                      value={question.explanation}
+                      onChange={(e) => updateQuestion(question.id, { explanation: e.target.value })}
+                      placeholder="Explicatie dupa finalizare (optional)"
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+                      {question.options.map((option, oIndex) => (
+                        <div key={option.id} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 8, alignItems: 'center' }}>
+                          <input
+                            type={question.type === 'multiple' ? 'checkbox' : 'radio'}
+                            checked={option.isCorrect}
+                            onChange={() => toggleCorrect(question.id, option.id)}
+                            aria-label={`Raspuns corect ${oIndex + 1}`}
+                          />
+                          <input
+                            className="form-input"
+                            value={option.text}
+                            onChange={(e) => updateOption(question.id, option.id, e.target.value)}
+                            placeholder={`Varianta ${oIndex + 1}`}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            disabled={question.options.length <= 2}
+                            onClick={() => removeOption(question.id, option.id)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 10 }} onClick={() => addOption(question.id)}>
+                      + Varianta
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <div className="modal__footer">
