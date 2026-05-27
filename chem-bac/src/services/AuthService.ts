@@ -1,59 +1,49 @@
 import axiosInstance from './axiosInstance';
-import type { AuthUser, LoginCredentials } from '../models/User';
 
-const STORAGE_KEY = 'chem_bac_user';
+const TOKEN_KEY = 'chem_bac_token';
 
-const mapUser = (data: any): AuthUser => ({
-  id: String(data.id),
-  name: data.name,
-  email: data.email,
-  role: data.role,
-  avatarInitials: data.avatarInitials,
-  createdAt: data.createdAt,
-});
+interface AuthResponse {
+  isSuccess: boolean;
+  message?: string;
+  token?: string;
+}
+
+const saveToken = (token: string): void => {
+  localStorage.setItem(TOKEN_KEY, token);
+};
+
+const requireToken = (data: AuthResponse): string => {
+  if (!data.isSuccess) throw new Error(data.message ?? 'Autentificare esuata.');
+  if (!data.token) throw new Error('Serverul nu a returnat token JWT.');
+  saveToken(data.token);
+  return data.token;
+};
 
 export const AuthService = {
-  async login(credentials: LoginCredentials): Promise<AuthUser> {
-    const response = await axiosInstance.post('/user/login', {
+  async login(credentials: { email: string; password: string }): Promise<string> {
+    const response = await axiosInstance.post<AuthResponse>('/auth/login', {
       email: credentials.email,
       password: credentials.password,
     });
-    const data = response.data;
-    if (!data.isSuccess) throw new Error(data.message);
-    const authUser = mapUser(data.user);
-    AuthService.saveSession(authUser);
-    return authUser;
+
+    return requireToken(response.data);
   },
 
-  async register(userData: { name: string; email: string; password: string }): Promise<AuthUser> {
-    const registerResponse = await axiosInstance.post('/user/register', {
+  async register(userData: { name: string; email: string; password: string }): Promise<string> {
+    const response = await axiosInstance.post<AuthResponse>('/auth/register', {
       name: userData.name,
       email: userData.email,
       password: userData.password,
     });
-    if (!registerResponse.data.isSuccess)
-      throw new Error(registerResponse.data.message);
 
-    return AuthService.login({
-      email: userData.email,
-      password: userData.password,
-    });
+    return requireToken(response.data);
   },
 
   logout(): void {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(TOKEN_KEY);
   },
 
-  saveSession(user: AuthUser): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-  },
-
-  restoreSession(): AuthUser | null {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as AuthUser) : null;
-    } catch {
-      return null;
-    }
+  restoreToken(): string | null {
+    return localStorage.getItem(TOKEN_KEY);
   },
 };

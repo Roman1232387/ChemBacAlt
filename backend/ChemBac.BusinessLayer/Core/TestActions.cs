@@ -55,6 +55,9 @@ public class TestActions
 
     protected ActionResponce CreateTestActionExecution(TestDto data)
     {
+        var validation = ValidateTestContent(data);
+        if (!validation.IsSuccess) return validation;
+
         using (var db = new TestContext())
         {
             var test = new Test
@@ -91,6 +94,9 @@ public class TestActions
 
     protected ActionResponce UpdateTestActionExecution(TestDto data)
     {
+        var validation = ValidateTestContent(data);
+        if (!validation.IsSuccess) return validation;
+
         var existing = GetTestEntityById(data.Id);
         if (existing == null)
             return new ActionResponce { IsSuccess = false, Message = "Testul nu a fost gasit." };
@@ -157,6 +163,44 @@ public class TestActions
     {
         using var db = new TestContext();
         return db.Tests.FirstOrDefault(t => t.Id == id && !t.IsDeleted);
+    }
+
+    private static ActionResponce ValidateTestContent(TestDto data)
+    {
+        if (string.IsNullOrWhiteSpace(data.Title) || data.Title.Trim().Length < 5)
+            return new ActionResponce { IsSuccess = false, Message = "Titlul testului trebuie sa aiba minim 5 caractere." };
+
+        if (string.IsNullOrWhiteSpace(data.Description) || data.Description.Trim().Length < 10)
+            return new ActionResponce { IsSuccess = false, Message = "Descrierea testului trebuie sa aiba minim 10 caractere." };
+
+        if (data.Duration < 5)
+            return new ActionResponce { IsSuccess = false, Message = "Durata testului trebuie sa fie de minim 5 minute." };
+
+        if (data.PassingScore < 10 || data.PassingScore > 100)
+            return new ActionResponce { IsSuccess = false, Message = "Scorul de promovare trebuie sa fie intre 10 si 100." };
+
+        if (data.Questions.Count == 0)
+            return new ActionResponce { IsSuccess = false, Message = "Testul trebuie sa contina cel putin o intrebare." };
+
+        foreach (var question in data.Questions)
+        {
+            if (string.IsNullOrWhiteSpace(question.Text))
+                return new ActionResponce { IsSuccess = false, Message = "Fiecare intrebare trebuie sa aiba text." };
+
+            if (question.Points < 1)
+                return new ActionResponce { IsSuccess = false, Message = "Fiecare intrebare trebuie sa aiba minim 1 punct." };
+
+            if (question.Options.Count < 2)
+                return new ActionResponce { IsSuccess = false, Message = "Fiecare intrebare trebuie sa aiba minim doua optiuni." };
+
+            if (question.Options.Any(o => string.IsNullOrWhiteSpace(o.Text)))
+                return new ActionResponce { IsSuccess = false, Message = "Fiecare optiune trebuie sa aiba text." };
+
+            if (!question.Options.Any(o => o.IsCorrect))
+                return new ActionResponce { IsSuccess = false, Message = "Fiecare intrebare trebuie sa aiba cel putin un raspuns corect." };
+        }
+
+        return new ActionResponce { IsSuccess = true, Message = "Continut valid." };
     }
 
     private static TestDto MapToDto(Test t) => new TestDto

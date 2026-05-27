@@ -5,19 +5,20 @@ import { useAuth } from '../../hooks/useAuth';
 interface NavItem { to: string; icon: string; label: string; }
 
 const USER_NAV: NavItem[] = [
-  { to: '/dashboard', icon: '⬡', label: 'Tablou de Bord' },
-  { to: '/lectii',    icon: '◈', label: 'Lectii' },
-  { to: '/teste',     icon: '◉', label: 'Teste' },
-  { to: '/rezultate', icon: '◎', label: 'Rezultatele Mele' },
-  { to: '/teme',      icon: '📚', label: 'Teme BAC' },
+  { to: '/dashboard', icon: '□', label: 'Tablou de Bord' },
+  { to: '/lectii', icon: 'L', label: 'Lectii' },
+  { to: '/teste', icon: 'T', label: 'Teste' },
+  { to: '/rezultate', icon: 'R', label: 'Rezultatele Mele' },
+  { to: '/teme', icon: 'B', label: 'Teme BAC' },
 ];
 
 const ADMIN_NAV: NavItem[] = [
-  { to: '/dashboard',   icon: '⬡', label: 'Tablou de Bord' },
-  { to: '/lectii',      icon: '◈', label: 'Lectii' },
-  { to: '/teste',       icon: '◉', label: 'Teste' },
-  { to: '/admin/teste', icon: '⬙', label: 'Admin – Teste' },
-  { to: '/teme',       icon: '📚', label: 'Teme BAC' },
+  { to: '/dashboard', icon: '□', label: 'Tablou de Bord' },
+  { to: '/lectii', icon: 'L', label: 'Lectii' },
+  { to: '/teste', icon: 'T', label: 'Teste' },
+  { to: '/admin/lectii', icon: 'A', label: 'Admin - Lectii' },
+  { to: '/admin/teste', icon: 'Q', label: 'Admin - Teste' },
+  { to: '/teme', icon: 'B', label: 'Teme BAC' },
 ];
 
 export function Sidebar() {
@@ -30,10 +31,10 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__logo">
-        <span className="sidebar__logo-icon">⚗</span>
+        <span className="sidebar__logo-icon">CB</span>
         <div>
           <div className="sidebar__logo-title">ChimieBAC</div>
-          <div className="sidebar__logo-sub">Bacalaureat 2025</div>
+          <div className="sidebar__logo-sub">Bacalaureat</div>
         </div>
       </div>
 
@@ -60,13 +61,13 @@ export function Sidebar() {
             <div>
               <div className="sidebar__user-name">{user.name}</div>
               <div className="sidebar__user-role">
-                {user.role === 'admin' ? '👑 Administrator' : '🎓 Elev'}
+                {user.role === 'admin' ? 'Administrator' : 'Elev'}
               </div>
             </div>
           </div>
         )}
         <button className="btn btn-ghost btn-sm btn-full" onClick={handleLogout}>
-          ⎋ Deconectare
+          Deconectare
         </button>
       </div>
     </aside>

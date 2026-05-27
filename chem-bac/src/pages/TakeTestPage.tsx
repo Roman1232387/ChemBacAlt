@@ -31,6 +31,10 @@ export function TakeTestPage() {
 
   const startTest = useCallback(() => {
     if (!test) return;
+    if (test.questions.length === 0) {
+      setError('Testul nu are intrebari. Revino dupa ce administratorul adauga intrebari.');
+      return;
+    }
     setAnswers(test.questions.map((q) => ({ questionId: q.id, selectedOptionIds: [] })));
     setStartedAt(new Date().toISOString());
     setCurQ(0);
@@ -62,6 +66,7 @@ export function TakeTestPage() {
 
   const progress = useMemo(() => {
     if (!test) return 0;
+    if (test.questions.length === 0) return 0;
     const answered = answers.filter((a) => a.selectedOptionIds.length > 0).length;
     return Math.round((answered / test.questions.length) * 100);
   }, [answers, test]);
@@ -83,13 +88,27 @@ export function TakeTestPage() {
           <div className="stat-card"><div className="stat-card__value">{test.duration}</div><div className="stat-card__label">Minute</div></div>
           <div className="stat-card"><div className="stat-card__value" style={{ color: 'var(--amber)' }}>{test.passingScore}%</div><div className="stat-card__label">Promovare</div></div>
         </div>
-        <button className="btn btn-primary btn-lg" onClick={startTest}>Incepe testul →</button>
+        {test.questions.length === 0 ? (
+          <div className="alert alert-error" style={{ textAlign: 'left' }}>
+            Testul nu are intrebari si nu poate fi sustinut inca.
+          </div>
+        ) : (
+          <button className="btn btn-primary btn-lg" onClick={startTest}>Incepe testul →</button>
+        )}
       </div>
     </div>
   );
 
   /* ── Active ── */
   const q = test.questions[curQ];
+  if (!q) {
+    return (
+      <div className="state-center state-error">
+        <p>Testul nu are intrebari disponibile.</p>
+        <button className="btn btn-secondary" onClick={() => navigate('/teste')}>Inapoi</button>
+      </div>
+    );
+  }
   const curAns = answers.find((a) => a.questionId === q.id);
 
   return (

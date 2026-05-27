@@ -26,6 +26,25 @@ const mapTest = (data: any): Test => ({
   })),
 });
 
+const mapQuestionForApi = (question: Test['questions'][number]) => ({
+  id: Number(question.id) || 0,
+  text: question.text,
+  type: question.type,
+  explanation: question.explanation,
+  points: question.points,
+  options: question.options.map((option) => ({
+    id: Number(option.id) || 0,
+    text: option.text,
+    isCorrect: option.isCorrect,
+  })),
+});
+
+const assertTestPayload = (data: any): void => {
+  if (!data || typeof data.id === 'undefined' || !data.title || !data.status) {
+    throw new Error(data?.message ?? 'Raspuns invalid de la server pentru test.');
+  }
+};
+
 export const TestService = {
   async getAll(): Promise<Test[]> {
     const response = await axiosInstance.get('/test/getAll');
@@ -49,9 +68,10 @@ export const TestService = {
       createdById: Number(createdById) || 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      questions: [],
+      questions: data.questions.map(mapQuestionForApi),
     });
-    return response.data;
+    assertTestPayload(response.data);
+    return mapTest(response.data);
   },
 
   async update(id: string, data: TestFormData): Promise<Test> {
@@ -66,9 +86,10 @@ export const TestService = {
       createdById: 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      questions: [],
+      questions: data.questions.map(mapQuestionForApi),
     });
-    return response.data;
+    assertTestPayload(response.data);
+    return mapTest(response.data);
   },
 
   async delete(id: string): Promise<void> {

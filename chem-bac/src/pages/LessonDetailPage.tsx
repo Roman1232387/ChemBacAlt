@@ -54,18 +54,25 @@ export function LessonDetailPage() {
       </div>
 
       {/* Sections */}
-      {lesson.sections.map((sec, i) => (
-        <div key={sec.id} className="card" style={{ marginBottom: 14 }}>
-          <div className="flex items-center gap-3 mb-4">
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--teal-dim)', border: '1px solid rgba(0,212,170,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
-              {i + 1}
-            </div>
-            <h3 style={{ fontFamily: 'var(--font-display)' }}>{sec.title}</h3>
-          </div>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.75 }}>{sec.content}</p>
-          {sec.formula && <div className="formula-block">{sec.formula}</div>}
+      {lesson.sections.length === 0 ? (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', marginBottom: 8 }}>Continut indisponibil</h3>
+          <p className="text-muted">Aceasta lectie nu are sectiuni adaugate inca.</p>
         </div>
-      ))}
+      ) : (
+        lesson.sections.map((sec, i) => (
+          <div key={sec.id} className="card" style={{ marginBottom: 14 }}>
+            <div className="flex items-center gap-3 mb-4">
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--teal-dim)', border: '1px solid rgba(0,212,170,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, color: 'var(--teal)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
+                {i + 1}
+              </div>
+              <h3 style={{ fontFamily: 'var(--font-display)' }}>{sec.title}</h3>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.75 }}>{sec.content}</p>
+            {sec.formula && <div className="formula-block">{sec.formula}</div>}
+          </div>
+        ))
+      )}
 
       {/* Related tests */}
       {tests.length > 0 && (

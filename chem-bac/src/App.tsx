@@ -18,6 +18,7 @@ import {TakeTestPage} from './pages/TakeTestPage';
 import {MyResultsPage} from './pages/MyResultsPage';
 import {ResultDetailPage} from './pages/ResultDetailPage';
 import {AdminTestsPage} from './pages/admin/AdminTestsPage';
+import {AdminLessonsPage} from './pages/admin/AdminLessonsPage';
 
 export default function App() {
     return (
@@ -52,6 +53,7 @@ export default function App() {
                     {/* ── Admin-only routes ── */}
                     <Route element={<AdminRoute/>}>
                         <Route element={<ProtectedLayout/>}>
+                            <Route path="/admin/lectii" element={<AdminLessonsPage/>}/>
                             <Route path="/admin/teste" element={<AdminTestsPage/>}/>
                         </Route>
                     </Route>
