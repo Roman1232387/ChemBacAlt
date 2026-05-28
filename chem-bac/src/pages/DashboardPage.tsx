@@ -17,6 +17,7 @@ export function DashboardPage() {
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(true);
   const [backendStatus, setBackendStatus] = useState<string>('Verificare...');
+  const [dataError, setDataError] = useState<string | null>(null);
 
   useEffect(() => {
     HealthService.check()
@@ -26,6 +27,7 @@ export function DashboardPage() {
   useEffect(() => {
     const load = async () => {
       try {
+        setDataError(null);
         const [l, t] = await Promise.all([LessonService.getAll(), TestService.getAll()]);
         setLessons(l);
         setTests(t.filter((tt) => tt.status === 'published'));
@@ -33,6 +35,11 @@ export function DashboardPage() {
           const r = await ResultService.getByUser(user.id);
           setResults(r);
         }
+      } catch {
+        setLessons([]);
+        setTests([]);
+        setResults([]);
+        setDataError('Datele nu au putut fi incarcate. Verifica daca API-ul si baza de date ruleaza.');
       } finally {
         setLoading(false);
       }
@@ -73,6 +80,11 @@ export function DashboardPage() {
       }}>
         Backend: {backendStatus}
       </div>
+      {dataError && (
+        <div className="alert alert-error" style={{ marginBottom: 16 }}>
+          {dataError}
+        </div>
+      )}
       {/* Stats */}
       <div className="grid-stats mb-6">
         <div className="stat-card">

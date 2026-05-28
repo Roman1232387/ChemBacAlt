@@ -18,3 +18,6 @@ init.sql
 # Frontend cache
 **/.vite/
 **/node_modules/.cache/
+
+# Local dev logs
+vite*.log
