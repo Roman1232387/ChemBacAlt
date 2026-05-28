@@ -1,22 +1,14 @@
-using ChemBac.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChemBac.DataAccess.Context;
 
-public class UserContext : DbContext
+public class UserContext : ChemBacDbContext
 {
-    public DbSet<User> Users { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    public UserContext()
     {
-        optionsBuilder.UseNpgsql(DbSession.ConnectionString);
     }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public UserContext(DbContextOptions<UserContext> options) : base(options)
     {
-        modelBuilder.Entity<User>(e =>
-        {
-            e.HasIndex(u => u.Email).IsUnique();
-        });
     }
 }

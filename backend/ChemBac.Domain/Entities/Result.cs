@@ -14,4 +14,7 @@ public class Result
     public DateTime StartedAt { get; set; }
     public DateTime CompletedAt { get; set; }
     public int Duration { get; set; }
+
+    public User User { get; set; } = null!;
+    public Test Test { get; set; } = null!;
 }

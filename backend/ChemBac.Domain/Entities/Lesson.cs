@@ -32,4 +32,5 @@ public class Lesson
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<LessonSection> Sections { get; set; } = new List<LessonSection>();
+    public ICollection<Test> Tests { get; set; } = new List<Test>();
 }

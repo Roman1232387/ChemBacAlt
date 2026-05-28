@@ -3,7 +3,7 @@ using ChemBac.DataAccess.Context;
 using ChemBac.BusinessLayer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 using System.Text;
@@ -18,6 +18,16 @@ DbSession.ConnectionString =
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<BusinessLogic>();
+builder.Services.AddDbContext<ChemBacDbContext>(options =>
+    options.UseNpgsql(DbSession.GetConnectionString()));
+builder.Services.AddDbContext<UserContext>(options =>
+    options.UseNpgsql(DbSession.GetConnectionString()));
+builder.Services.AddDbContext<LessonContext>(options =>
+    options.UseNpgsql(DbSession.GetConnectionString()));
+builder.Services.AddDbContext<TestContext>(options =>
+    options.UseNpgsql(DbSession.GetConnectionString()));
+builder.Services.AddDbContext<ResultContext>(options =>
+    options.UseNpgsql(DbSession.GetConnectionString()));
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -36,18 +46,11 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header
     });
 
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
+            new OpenApiSecuritySchemeReference("Bearer", document, null),
+            new List<string>()
         }
     });
 });

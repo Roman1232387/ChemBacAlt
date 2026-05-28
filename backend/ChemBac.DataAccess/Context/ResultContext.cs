@@ -1,14 +1,14 @@
-using ChemBac.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChemBac.DataAccess.Context;
 
-public class ResultContext : DbContext
+public class ResultContext : ChemBacDbContext
 {
-    public DbSet<Result> Results { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    public ResultContext()
     {
-        optionsBuilder.UseNpgsql(DbSession.ConnectionString);
+    }
+
+    public ResultContext(DbContextOptions<ResultContext> options) : base(options)
+    {
     }
 }

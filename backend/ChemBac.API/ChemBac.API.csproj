@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ChemBac.BusinessLayer\ChemBac.BusinessLayer.csproj" />
+    <ProjectReference Include="..\ChemBac.DataAccess\ChemBac.DataAccess.csproj" />
     <ProjectReference Include="..\ChemBac.Domain\ChemBac.Domain.csproj" />
   </ItemGroup>
 

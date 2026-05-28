@@ -1,26 +1,14 @@
-using ChemBac.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChemBac.DataAccess.Context;
 
-public class LessonContext : DbContext
+public class LessonContext : ChemBacDbContext
 {
-    public DbSet<Lesson> Lessons { get; set; }
-    public DbSet<LessonSection> LessonSections { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    public LessonContext()
     {
-        optionsBuilder.UseNpgsql(DbSession.ConnectionString);
     }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public LessonContext(DbContextOptions<LessonContext> options) : base(options)
     {
-        modelBuilder.Entity<LessonSection>(e =>
-        {
-            e.HasOne(s => s.Lesson)
-             .WithMany(l => l.Sections)
-             .HasForeignKey(s => s.LessonId)
-             .OnDelete(DeleteBehavior.Cascade);
-        });
     }
 }
