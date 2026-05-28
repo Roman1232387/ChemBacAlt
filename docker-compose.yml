@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: chembac-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ChemBac
+      POSTGRES_USER: chembac_user
+      POSTGRES_PASSWORD: chembac1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - chembac_pg_data:/var/lib/postgresql/data
+
+volumes:
+  chembac_pg_data:
