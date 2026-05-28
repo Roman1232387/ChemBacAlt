@@ -48,6 +48,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("register")]
+    [Obsolete("Use /api/auth/register to receive a JWT token.")]
     public IActionResult Register([FromBody] UserRegisterDto data)
     {
         try
@@ -63,6 +64,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("login")]
+    [Obsolete("Use /api/auth/login to receive a JWT token.")]
     public IActionResult Login([FromBody] UserLoginDto data)
     {
         try
@@ -78,6 +80,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPut]
+    [Authorize]
     public IActionResult Update([FromBody] UserResponseDto data)
     {
         try
