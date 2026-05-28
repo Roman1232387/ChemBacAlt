@@ -1,6 +1,5 @@
 using ChemBac.BusinessLayer.Interfaces;
 using ChemBac.BusinessLayer.Services;
-using ChemBac.BusinessLayer.Structure;
 
 namespace ChemBac.BusinessLayer;
 
@@ -12,7 +11,7 @@ public class BusinessLogic
         Tests = new TestService();
         Users = new UserService();
         Results = new ResultService();
-        Auth = new AuthExecution();
+        Auth = new AuthService();
     }
 
     public ILessonAction Lessons { get; }
