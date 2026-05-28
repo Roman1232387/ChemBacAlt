@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16
@@ -13,6 +11,41 @@ services:
       - "5432:5432"
     volumes:
       - chembac_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chembac_user -d ChemBac"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: ChemBac.API/Dockerfile
+    container_name: chembac-api
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=ChemBac;Username=chembac_user;Password=chembac1234;
+      Cors__AllowedOrigins__0: http://localhost:5173
+      Cors__AllowedOrigins__1: http://127.0.0.1:5173
+    ports:
+      - "5188:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./chem-bac
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:5188/api
+    container_name: chembac-frontend
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
 
 volumes:
   chembac_pg_data:
