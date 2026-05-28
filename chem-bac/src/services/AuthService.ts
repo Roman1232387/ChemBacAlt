@@ -12,6 +12,24 @@ const saveToken = (token: string): void => {
   localStorage.setItem(TOKEN_KEY, token);
 };
 
+const decodePayload = (token: string): { exp?: number } | null => {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(base64)) as { exp?: number };
+  } catch {
+    return null;
+  }
+};
+
+const isTokenValid = (token: string | null): boolean => {
+  if (!token) return false;
+  const payload = decodePayload(token);
+  if (!payload) return false;
+  return !payload.exp || payload.exp * 1000 > Date.now();
+};
+
 const requireToken = (data: AuthResponse): string => {
   if (!data.isSuccess) throw new Error(data.message ?? 'Autentificare esuata.');
   if (!data.token) throw new Error('Serverul nu a returnat token JWT.');
@@ -45,5 +63,9 @@ export const AuthService = {
 
   restoreToken(): string | null {
     return localStorage.getItem(TOKEN_KEY);
+  },
+
+  hasValidToken(): boolean {
+    return isTokenValid(localStorage.getItem(TOKEN_KEY));
   },
 };
