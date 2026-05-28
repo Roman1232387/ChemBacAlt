@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using ChemBac.BusinessLayer.Services;
 using ChemBac.Domain.Models.User;
+using ChemBac.Domain.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
@@ -135,6 +136,8 @@ public class AuthActions
 
     private static string NormalizeRole(string role)
     {
-        return string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase) ? "Admin" : "User";
+        return string.Equals(role, AppRoles.Admin, StringComparison.OrdinalIgnoreCase)
+            ? AppRoles.Admin
+            : AppRoles.User;
     }
 }

@@ -1,6 +1,7 @@
 using ChemBac.BusinessLayer;
 using ChemBac.BusinessLayer.Interfaces;
 using ChemBac.Domain.Models.Result;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ChemBac.API.Controllers;
@@ -17,6 +18,7 @@ public class ResultsController : ControllerBase
     }
 
     [HttpGet("getByUser")]
+    [Authorize]
     public IActionResult GetByUser(int userId)
     {
         try
@@ -31,6 +33,7 @@ public class ResultsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public IActionResult GetById(int id)
     {
         try
@@ -46,6 +49,7 @@ public class ResultsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public IActionResult Submit([FromBody] ResultDto data)
     {
         try

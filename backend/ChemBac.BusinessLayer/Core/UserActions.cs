@@ -2,6 +2,7 @@ using ChemBac.DataAccess.Context;
 using ChemBac.Domain.Entities;
 using ChemBac.Domain.Models.Responces;
 using ChemBac.Domain.Models.User;
+using ChemBac.Domain.Security;
 
 namespace ChemBac.BusinessLayer.Core;
 
@@ -51,7 +52,7 @@ public class UserActions
                 Name           = data.Name,
                 Email          = data.Email,
                 PasswordHash   = BCrypt.Net.BCrypt.HashPassword(data.Password),
-                Role           = "user",
+                Role           = AppRoles.User,
                 AvatarInitials = initials,
                 CreatedAt      = DateTime.UtcNow
             };
@@ -93,7 +94,7 @@ public class UserActions
 
             existing.Name           = data.Name;
             existing.Email          = data.Email;
-            existing.Role           = data.Role;
+            existing.Role           = NormalizeRole(data.Role);
             existing.AvatarInitials = data.AvatarInitials;
 
             db.Users.Update(existing);
@@ -125,8 +126,15 @@ public class UserActions
         Id             = u.Id,
         Name           = u.Name,
         Email          = u.Email,
-        Role           = u.Role,
+        Role           = NormalizeRole(u.Role),
         AvatarInitials = u.AvatarInitials,
         CreatedAt      = u.CreatedAt
     };
+
+    private static string NormalizeRole(string role)
+    {
+        return string.Equals(role, AppRoles.Admin, StringComparison.OrdinalIgnoreCase)
+            ? AppRoles.Admin
+            : AppRoles.User;
+    }
 }

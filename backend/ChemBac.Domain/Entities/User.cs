@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ChemBac.Domain.Security;
 
 namespace ChemBac.Domain.Entities;
 
@@ -23,7 +24,7 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
 
     [StringLength(20)]
-    public string Role { get; set; } = "user";
+    public string Role { get; set; } = AppRoles.User;
 
     [StringLength(5)]
     public string AvatarInitials { get; set; } = string.Empty;

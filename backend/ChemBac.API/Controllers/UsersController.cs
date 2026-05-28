@@ -1,6 +1,7 @@
 using ChemBac.BusinessLayer;
 using ChemBac.BusinessLayer.Interfaces;
 using ChemBac.Domain.Models.User;
+using ChemBac.Domain.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +19,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("getAll")]
-    [Authorize]
+    [Authorize(Roles = AppRoles.Admin)]
     public IActionResult GetAll()
     {
         try
@@ -80,7 +81,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPut]
-    [Authorize]
+    [Authorize(Roles = AppRoles.Admin)]
     public IActionResult Update([FromBody] UserResponseDto data)
     {
         try
@@ -96,7 +97,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpDelete]
-    [Authorize]
+    [Authorize(Roles = AppRoles.Admin)]
     public IActionResult Delete(int id)
     {
         try

@@ -1,6 +1,7 @@
 using ChemBac.BusinessLayer;
 using ChemBac.BusinessLayer.Interfaces;
 using ChemBac.Domain.Models.Test;
+using ChemBac.Domain.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -47,7 +48,7 @@ public class TestsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public IActionResult Create([FromBody] TestDto data)
     {
         try
@@ -71,7 +72,7 @@ public class TestsController : ControllerBase
     }
 
     [HttpPut]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public IActionResult Update([FromBody] TestDto data)
     {
         try
@@ -89,7 +90,7 @@ public class TestsController : ControllerBase
     }
 
     [HttpDelete]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     public IActionResult Delete(int id)
     {
         try
