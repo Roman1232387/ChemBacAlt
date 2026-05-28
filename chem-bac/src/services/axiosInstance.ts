@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 const TOKEN_KEY = 'chem_bac_token';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5188/api';
 
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:5188/api',
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -16,21 +17,5 @@ axiosInstance.interceptors.request.use((config) => {
     }
     return config;
 });
-
-axiosInstance.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            localStorage.removeItem(TOKEN_KEY);
-            if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-            }
-        }
-        if (error.response?.status === 500) {
-            console.error('Server error (500):', error.response.data);
-        }
-        return Promise.reject(error);
-    }
-);
 
 export default axiosInstance;

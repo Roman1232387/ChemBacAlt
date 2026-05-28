@@ -1,6 +1,7 @@
 import React from 'react';
 import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
 import {AuthProvider} from './context/AuthContext';
+import {ApiProvider} from './context/ApiContext';
 import { ProtectedLayout, PublicLayout } from './layouts/layouts';
 import {ProtectedRoute, AdminRoute} from './routes/guards';
 
@@ -23,8 +24,9 @@ import {AdminLessonsPage} from './pages/admin/AdminLessonsPage';
 export default function App() {
     return (
         <BrowserRouter>
-            <AuthProvider>
-                <Routes>
+            <ApiProvider>
+                <AuthProvider>
+                    <Routes>
 
                     {/* ── Public routes ── */}
                     <Route element={<PublicLayout/>}>
@@ -62,8 +64,9 @@ export default function App() {
                     <Route path="/" element={<Navigate to="/dashboard" replace/>}/>
                     <Route path="*" element={<Page404/>}/>
 
-                </Routes>
-            </AuthProvider>
+                    </Routes>
+                </AuthProvider>
+            </ApiProvider>
         </BrowserRouter>
     );
 }

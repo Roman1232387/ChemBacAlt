@@ -8,7 +8,7 @@ interface HealthResponse {
 
 export const HealthService = {
     check: async (): Promise<string> => {
-        const response = await axiosInstance.get<HealthResponse>('/Health');
+        const response = await axiosInstance.get<HealthResponse>('/health');
         return response.data.status;
     },
 };
