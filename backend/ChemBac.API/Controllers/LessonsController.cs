@@ -10,12 +10,11 @@ namespace ChemBac.API.Controllers;
 [ApiController]
 public class LessonsController : ControllerBase
 {
-    internal ILessonAction _lessonAction;
+    private readonly ILessonAction _lessonAction;
 
-    public LessonsController()
+    public LessonsController(BusinessLogic businessLogic)
     {
-        var bl = new BusinessLogic();
-        _lessonAction = bl.LessonAction();
+        _lessonAction = businessLogic.LessonAction();
     }
 
     [HttpGet("getAll")]
@@ -61,7 +60,9 @@ public class LessonsController : ControllerBase
                 .OrderByDescending(l => l.Id)
                 .FirstOrDefault();
 
-            return created == null ? Ok(response) : Ok(created);
+            return created == null
+                ? StatusCode(StatusCodes.Status201Created, response)
+                : CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (Exception ex)
         {
@@ -94,7 +95,8 @@ public class LessonsController : ControllerBase
         try
         {
             var response = _lessonAction.DeleteLessonAction(id);
-            return Ok(response);
+            if (!response.IsSuccess) return NotFound(response);
+            return NoContent();
         }
         catch (Exception ex)
         {

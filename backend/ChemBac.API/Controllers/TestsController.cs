@@ -10,12 +10,11 @@ namespace ChemBac.API.Controllers;
 [ApiController]
 public class TestsController : ControllerBase
 {
-    internal ITestAction _testAction;
+    private readonly ITestAction _testAction;
 
-    public TestsController()
+    public TestsController(BusinessLogic businessLogic)
     {
-        var bl = new BusinessLogic();
-        _testAction = bl.TestAction();
+        _testAction = businessLogic.TestAction();
     }
 
     [HttpGet("getAll")]
@@ -61,7 +60,9 @@ public class TestsController : ControllerBase
                 .OrderByDescending(t => t.Id)
                 .FirstOrDefault();
 
-            return created == null ? Ok(response) : Ok(created);
+            return created == null
+                ? StatusCode(StatusCodes.Status201Created, response)
+                : CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (Exception ex)
         {
@@ -94,7 +95,8 @@ public class TestsController : ControllerBase
         try
         {
             var response = _testAction.DeleteTestAction(id);
-            return Ok(response);
+            if (!response.IsSuccess) return NotFound(response);
+            return NoContent();
         }
         catch (Exception ex)
         {

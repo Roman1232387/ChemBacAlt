@@ -12,11 +12,10 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly IAuthAction _authAction;
 
-    public AuthController(IConfiguration configuration)
+    public AuthController(IConfiguration configuration, BusinessLogic businessLogic)
     {
         _configuration = configuration;
-        var bl = new BusinessLogic();
-        _authAction = bl.AuthAction();
+        _authAction = businessLogic.AuthAction();
     }
 
     [HttpPost("login")]
@@ -41,7 +40,7 @@ public class AuthController : ControllerBase
         {
             var response = _authAction.RegisterAction(data, _configuration);
             if (!response.IsSuccess) return BadRequest(new { message = response.Message });
-            return Ok(response);
+            return StatusCode(StatusCodes.Status201Created, response);
         }
         catch (Exception ex)
         {

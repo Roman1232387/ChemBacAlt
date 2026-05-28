@@ -10,12 +10,11 @@ namespace ChemBac.API.Controllers;
 [ApiController]
 public class UsersController : ControllerBase
 {
-    internal IUserAction _userAction;
+    private readonly IUserAction _userAction;
 
-    public UsersController()
+    public UsersController(BusinessLogic businessLogic)
     {
-        var bl = new BusinessLogic();
-        _userAction = bl.UserAction();
+        _userAction = businessLogic.UserAction();
     }
 
     [HttpGet("getAll")]
@@ -54,7 +53,8 @@ public class UsersController : ControllerBase
         try
         {
             var response = _userAction.RegisterUserAction(data);
-            return Ok(response);
+            if (!response.IsSuccess) return BadRequest(response);
+            return StatusCode(StatusCodes.Status201Created, response);
         }
         catch (Exception ex)
         {
@@ -68,6 +68,7 @@ public class UsersController : ControllerBase
         try
         {
             var response = _userAction.LoginUserAction(data);
+            if (!response.IsSuccess) return Unauthorized(response);
             return Ok(response);
         }
         catch (Exception ex)
@@ -82,6 +83,7 @@ public class UsersController : ControllerBase
         try
         {
             var response = _userAction.UpdateUserAction(data);
+            if (!response.IsSuccess) return NotFound(response);
             return Ok(response);
         }
         catch (Exception ex)
@@ -97,7 +99,8 @@ public class UsersController : ControllerBase
         try
         {
             var response = _userAction.DeleteUserAction(id);
-            return Ok(response);
+            if (!response.IsSuccess) return NotFound(response);
+            return NoContent();
         }
         catch (Exception ex)
         {

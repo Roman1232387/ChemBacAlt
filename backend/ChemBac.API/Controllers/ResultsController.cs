@@ -9,12 +9,11 @@ namespace ChemBac.API.Controllers;
 [ApiController]
 public class ResultsController : ControllerBase
 {
-    internal IResultAction _resultAction;
+    private readonly IResultAction _resultAction;
 
-    public ResultsController()
+    public ResultsController(BusinessLogic businessLogic)
     {
-        var bl = new BusinessLogic();
-        _resultAction = bl.ResultAction();
+        _resultAction = businessLogic.ResultAction();
     }
 
     [HttpGet("getByUser")]
@@ -52,7 +51,8 @@ public class ResultsController : ControllerBase
         try
         {
             var response = _resultAction.SubmitResultAction(data);
-            return Ok(response);
+            if (!response.IsSuccess) return BadRequest(response);
+            return StatusCode(StatusCodes.Status201Created, response);
         }
         catch (Exception ex)
         {
