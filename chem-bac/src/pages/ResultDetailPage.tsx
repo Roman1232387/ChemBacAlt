@@ -1,101 +1,246 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ResultService } from '../services/ResultService';
-import { TestService }   from '../services/TestService';
+import { TestService } from '../services/TestService';
 import type { Result } from '../models/Result';
-import type { Test }   from '../models/Test';
+import type { Test } from '../models/Test';
+import type { Question, UserAnswer } from '../models/Question';
+
+type SubjectKey = 'I' | 'II' | 'III';
+
+const subjectForIndex = (index: number): SubjectKey => index < 10 ? 'I' : index < 20 ? 'II' : 'III';
+const subjectTitle = (subject: SubjectKey) => `Subiectul ${subject}`;
+
+function getCorrectAnswer(question: Question) {
+  if (question.type === 'stepped') {
+    return (question.steps ?? [])
+      .map((step, index) => `${index + 1}. ${step.correctAnswer}${step.unit ? ` ${step.unit}` : ''}`)
+      .join('; ');
+  }
+
+  return (question.options ?? [])
+    .filter((option) => option.isCorrect)
+    .map((option) => option.text)
+    .join(', ');
+}
+
+function getUserAnswer(question: Question, result: Result) {
+  const storedAnswer = result.answers.find((answer) => answer.questionId === question.id) as UserAnswer | undefined;
+  if (question.type === 'stepped') {
+    const stepAnswers = storedAnswer?.stepAnswers ?? {};
+    const values = (question.steps ?? []).map((step, index) => `${index + 1}. ${stepAnswers[step.id] ?? 'fără răspuns'}`);
+    return values.join('; ');
+  }
+
+  const selectedIds = storedAnswer?.selectedOptionIds ?? result.questionResults.find((item) => item.questionId === question.id)?.userAnswerIds ?? [];
+  const selected = (question.options ?? []).filter((option) => selectedIds.includes(option.id)).map((option) => option.text);
+  return selected.length > 0 ? selected.join(', ') : 'fără răspuns';
+}
 
 export function ResultDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [result,  setResult]  = useState<Result | null>(null);
-  const [test,    setTest]    = useState<Test | null>(null);
+  const [result, setResult] = useState<Result | null>(null);
+  const [test, setTest] = useState<Test | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [testWarning, setTestWarning] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    const submitted = sessionStorage.getItem('test_submitted');
+    if (submitted === 'true') {
+      setShowToast(true);
+      sessionStorage.removeItem('test_submitted');
+      const timer = setTimeout(() => setShowToast(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!id) {
+      setError('Id-ul rezultatului lipseste.');
+      setLoading(false);
+      return;
+    }
+
     const load = async () => {
+      setLoading(true);
+      setError(null);
+      setTestWarning(null);
       try {
-        const r = await ResultService.getById(id);
-        setResult(r);
-        setTest(await TestService.getById(r.testId));
-      } finally { setLoading(false); }
+        const loadedResult = await ResultService.getById(id);
+        setResult(loadedResult);
+
+        try {
+          setTest(await TestService.getById(loadedResult.testId));
+        } catch {
+          setTest(null);
+          setTestWarning('Rezultatul există, dar testul asociat nu mai este disponibil.');
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Rezultatul nu a fost găsit.');
+      } finally {
+        setLoading(false);
+      }
     };
+
     load();
   }, [id]);
 
-  if (loading) return <div className="state-center"><div className="spinner" /></div>;
-  if (!result || !test) return <div className="state-center state-error"><p>Rezultatul nu a fost gasit.</p></div>;
+  const subjectRows = useMemo(() => {
+    if (!test || !result) return [];
+    const rows: Record<SubjectKey, { subject: SubjectKey; earned: number; max: number; wrong: number }> = {
+      I: { subject: 'I', earned: 0, max: 0, wrong: 0 },
+      II: { subject: 'II', earned: 0, max: 0, wrong: 0 },
+      III: { subject: 'III', earned: 0, max: 0, wrong: 0 },
+    };
 
-  const color = result.percentage >= 80 ? 'var(--green)' : result.percentage >= 60 ? 'var(--amber)' : 'var(--red)';
-  const mins  = Math.floor(result.duration / 60);
-  const secs  = result.duration % 60;
+    test.questions.forEach((question, index) => {
+      const subject = subjectForIndex(index);
+      const qr = result.questionResults.find((item) => item.questionId === question.id);
+      rows[subject].earned += qr?.pointsEarned ?? 0;
+      rows[subject].max += qr?.pointsAvailable ?? question.points;
+      if (qr && !qr.isCorrect) rows[subject].wrong += 1;
+    });
+
+    return [rows.I, rows.II, rows.III].filter((row) => row.max > 0);
+  }, [result, test]);
+
+  const questionRows = useMemo(() => {
+    if (!test || !result) return [];
+    return test.questions
+      .map((question, index) => ({
+        question,
+        index,
+        qr: result.questionResults.find((item) => item.questionId === question.id),
+      }));
+  }, [result, test]);
+
+  if (loading) return <div className="state-center"><div className="spinner" /></div>;
+  if (error) {
+    return (
+      <div className="state-center state-error">
+        <p>{error}</p>
+        <Link to="/rezultate" className="btn btn-secondary btn-sm">Înapoi la rezultate</Link>
+      </div>
+    );
+  }
+  if (!result) return <div className="state-center state-error"><p>Rezultatul nu a fost găsit.</p></div>;
+
+  const color = result.percentage >= 80 ? 'var(--green)' : result.percentage >= 50 ? 'var(--amber)' : 'var(--red)';
+  const mins = Math.floor(result.duration / 60);
+  const secs = result.duration % 60;
+  const testTitle = test?.title ?? `Test #${result.testId}`;
+  const message = result.percentage < 50
+    ? 'Mai ai de lucru! Recitește lecțiile și reia problemele pas cu pas.'
+    : result.percentage < 70
+      ? 'Progres bun! Continuă să exersezi, mai ales itemii unde ai pierdut puncte.'
+      : 'Excelent! Ești pregătit pentru BAC, menține ritmul de recapitulare.';
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto' }}>
+    <div className="exam-result-page">
+      {showToast && (
+        <div className="alert alert-success" style={{
+          position: 'fixed',
+          top: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          padding: '12px 24px',
+          borderRadius: 'var(--r-md)',
+          animation: 'pageFadeIn 0.3s ease-out'
+        }}>
+          ✓ Testul a fost trimis cu succes!
+        </div>
+      )}
       <div className="flex gap-3 flex-wrap" style={{ marginBottom: 24 }}>
-        <Link to="/rezultate" className="btn btn-ghost btn-sm">← Rezultatele mele</Link>
-        <Link to="/teste"     className="btn btn-secondary btn-sm">◉ Alte teste</Link>
+        <Link to="/rezultate" className="btn btn-ghost btn-sm">Înapoi la rezultate</Link>
+        <Link to="/teste" className="btn btn-secondary btn-sm">Alte teste</Link>
       </div>
 
-      {/* Score hero */}
-      <div className="card text-center" style={{
-        padding: '48px 32px', marginBottom: 24,
-        background: `linear-gradient(135deg,var(--bg-surface),${result.passed ? 'rgba(34,197,94,0.04)' : 'rgba(239,68,68,0.04)'})`,
-        border: `1px solid ${result.passed ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.25)'}`,
-      }}>
-        <div style={{ fontSize: '3.5rem', marginBottom: 8 }}>{result.passed ? '🏆' : '📖'}</div>
-        <div style={{ fontSize: '4rem', fontFamily: 'var(--font-display)', fontWeight: 900, color, lineHeight: 1 }}>
+      {testWarning && <div className="alert alert-warning">{testWarning}</div>}
+
+      <div className="card result-hero exam-result-hero">
+        <div>
+          <span className="badge badge-amber">Rezultat Simulare BAC</span>
+          <h2>{testTitle}</h2>
+          <p className="text-muted">Timp de lucru: {mins}m {secs}s</p>
+        </div>
+        <div className="exam-result-score" style={{ color }}>
           {result.percentage}%
+          <span>{result.score}/{result.maxScore} puncte</span>
         </div>
-        <p className="text-muted" style={{ marginTop: 6 }}>{result.score} din {result.maxScore} puncte</p>
-        <div style={{ marginTop: 16 }}>
-          <span className={`badge badge-${result.passed ? 'green' : 'red'}`} style={{ fontSize: '0.85rem', padding: '6px 16px' }}>
-            {result.passed ? '✓ PROMOVAT' : '✗ NEPROMOVAT'}
-          </span>
-        </div>
-        <p className="text-muted text-sm" style={{ marginTop: 12 }}>
-          {test.title} &middot; Timp: {mins}m {secs}s
-        </p>
       </div>
 
-      {/* Question review */}
-      <h3 style={{ fontFamily: 'var(--font-display)', marginBottom: 16 }}>Detalii pe intrebari</h3>
-      {test.questions.map((q, i) => {
-        const qr = result.questionResults.find((r) => r.questionId === q.id);
-        return (
-          <div key={q.id} className="card" style={{ marginBottom: 12, borderColor: qr?.isCorrect ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.25)' }}>
-            <div className="flex justify-between items-center" style={{ marginBottom: 10 }}>
-              <span className="text-sm text-muted">Intrebarea {i + 1}</span>
-              <div className="flex gap-2 items-center">
-                <span className="font-mono text-sm" style={{ color: qr?.isCorrect ? 'var(--green)' : 'var(--red)', fontWeight: 700 }}>
-                  {qr?.pointsEarned}/{qr?.pointsAvailable} pct
-                </span>
-                <span className={`badge badge-${qr?.isCorrect ? 'green' : 'red'}`}>{qr?.isCorrect ? '✓' : '✗'}</span>
-              </div>
-            </div>
-            <p className="font-bold" style={{ marginBottom: 12, lineHeight: 1.45 }}>{q.text}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {q.options.map((opt) => {
-                const userSel = qr?.userAnswerIds.includes(opt.id);
-                const isOk    = opt.isCorrect;
-                const bg  = isOk ? 'var(--green-dim)' : userSel ? 'var(--red-dim)' : 'var(--bg-elevated)';
-                const clr = isOk ? 'var(--green)'    : userSel ? 'var(--red)'     : 'var(--text-secondary)';
-                const brd = isOk ? 'rgba(34,197,94,0.3)' : userSel ? 'rgba(239,68,68,0.3)' : 'var(--border)';
-                return (
-                  <div key={opt.id} style={{ background: bg, border: `1px solid ${brd}`, borderRadius: 'var(--r-md)', padding: '10px 14px', color: clr, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span>{isOk ? '✓' : userSel ? '✗' : '○'}</span>
-                    <span style={{ flex: 1 }}>{opt.text}</span>
-                    {userSel && <span style={{ fontSize: '0.72rem', opacity: 0.7 }}>Raspunsul tau</span>}
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ marginTop: 12, background: 'var(--bg-elevated)', borderRadius: 'var(--r-md)', padding: '10px 14px', fontSize: '0.85rem', color: 'var(--text-secondary)', borderLeft: '3px solid var(--teal)' }}>
-              <span className="text-teal font-bold">Explicatie: </span>{q.explanation}
-            </div>
+      <div className="card exam-message">
+        <strong>{result.passed ? 'Promovat' : 'Nepromovat'}</strong>
+        <p>{message}</p>
+      </div>
+
+      {test && (
+        <>
+          <div className="table-wrap" style={{ marginBottom: 24 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Subiect</th>
+                  <th>Scor</th>
+                  <th>Procent</th>
+                  <th>Întrebări greșite</th>
+                </tr>
+              </thead>
+              <tbody>
+                {subjectRows.map((row) => (
+                  <tr key={row.subject}>
+                    <td className="font-bold">{subjectTitle(row.subject)}</td>
+                    <td className="font-mono">{row.earned}/{row.max}</td>
+                    <td>{row.max > 0 ? Math.round((row.earned / row.max) * 100) : 0}%</td>
+                    <td>{row.wrong}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        );
-      })}
+
+          <h3 style={{ marginBottom: 16 }}>Analiza întrebărilor</h3>
+          {questionRows.length === 0 ? (
+            <div className="card">
+              <p className="text-muted">Nu există detalii salvate pentru întrebări.</p>
+            </div>
+          ) : (
+            questionRows.map(({ question, index, qr }) => {
+              const isCorrect = Boolean(qr?.isCorrect);
+              return (
+              <div key={question.id} className={`card exam-wrong-card ${isCorrect ? 'exam-question-card--correct' : ''}`}>
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                  <span className={`badge badge-${isCorrect ? 'green' : 'red'}`}>
+                    {isCorrect ? 'Corect' : 'Greșit'} · {subjectTitle(subjectForIndex(index))}
+                  </span>
+                  <span className="font-mono text-sm">{qr?.pointsEarned ?? 0}/{qr?.pointsAvailable ?? question.points} pct</span>
+                </div>
+                <h4>{index + 1}. {question.text}</h4>
+                <div className="exam-answer-grid">
+                  <div className={`exam-answer ${isCorrect ? 'exam-answer--correct' : 'exam-answer--wrong'}`}>
+                    <strong>Răspunsul elevului</strong>
+                    <span>{getUserAnswer(question, result)}</span>
+                  </div>
+                  <div className="exam-answer exam-answer--correct">
+                    <strong>Răspuns corect</strong>
+                    <span>{getCorrectAnswer(question)}</span>
+                  </div>
+                </div>
+                {question.explanation && (
+                  <div className="exam-explanation">
+                    <strong>Explicație:</strong> {question.explanation}
+                  </div>
+                )}
+              </div>
+            );
+            })
+          )}
+        </>
+      )}
     </div>
   );
 }

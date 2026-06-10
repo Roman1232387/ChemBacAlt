@@ -4,8 +4,9 @@ import { LessonService } from '../../services/LessonService';
 import { useAuth } from '../../hooks/useAuth';
 import type { Test, TestFormData, TestStatus } from '../../models/Test';
 import type { Lesson } from '../../models/Lesson';
-import type { QuestionType } from '../../models/Question';
+import type { Question, QuestionStep, QuestionType } from '../../models/Question';
 import { TEST_STATUS_LABELS } from '../../models/Test';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 
 // ─── Form Validation ──────────────────────────────────────────────────────────
 interface FE { title?: string; description?: string; lessonId?: string; duration?: string; passingScore?: string; questions?: string; }
@@ -13,25 +14,54 @@ interface FE { title?: string; description?: string; lessonId?: string; duration
 function validateForm(d: TestFormData): FE {
   const e: FE = {};
   if (!d.title.trim()) e.title = 'Titlul este obligatoriu.';
-  else if (d.title.trim().length < 5) e.title = 'Titlul trebuie sa aiba minim 5 caractere.';
+  else if (d.title.trim().length < 5) e.title = 'Titlul trebuie să aibă minim 5 caractere.';
   if (!d.description.trim()) e.description = 'Descrierea este obligatorie.';
-  else if (d.description.trim().length < 10) e.description = 'Descrierea trebuie sa aiba minim 10 caractere.';
-  if (!d.lessonId) e.lessonId = 'Selectati o lectie.';
-  if (d.duration < 5 || d.duration > 180) e.duration = 'Durata trebuie sa fie intre 5 si 180 de minute.';
-  if (d.passingScore < 10 || d.passingScore > 100) e.passingScore = 'Scorul de promovare trebuie sa fie intre 10% si 100%.';
-  if (d.questions.length === 0) e.questions = 'Adaugati cel putin o intrebare.';
+  else if (d.description.trim().length < 10) e.description = 'Descrierea trebuie să aibă minim 10 caractere.';
+  if (!d.lessonId) e.lessonId = 'Selectați o lecție.';
+  if (d.duration < 5 || d.duration > 60) e.duration = 'Durata trebuie să fie între 5 și 60 de minute.';
+  if (d.passingScore < 10 || d.passingScore > 100) e.passingScore = 'Scorul de promovare trebuie să fie între 10% și 100%.';
+  if (d.questions.length === 0) e.questions = 'Adăugați cel puțin o întrebare.';
   else {
-    const invalidIndex = d.questions.findIndex((q) =>
-      !q.text.trim() ||
-      q.points < 1 ||
-      q.options.length < 2 ||
-      q.options.some((o) => !o.text.trim()) ||
-      !q.options.some((o) => o.isCorrect)
-    );
-    if (invalidIndex >= 0) e.questions = `Intrebarea ${invalidIndex + 1} trebuie sa aiba text, minim doua optiuni si raspuns corect.`;
+    const invalidIndex = d.questions.findIndex((q) => {
+      if (!q.text.trim() || q.points < 1) return true;
+      if (q.type === 'stepped') {
+        return q.steps.length < 2 || q.steps.some((step) => !step.prompt.trim() || !step.correctAnswer.trim() || step.points < 1);
+      }
+      if (q.type === 'true-false' || q.type === 'true_false') {
+        return q.options.length !== 2 || !q.options.some((o) => o.isCorrect);
+      }
+      return q.options.length < 2 || q.options.some((o) => !o.text.trim()) || !q.options.some((o) => o.isCorrect);
+    });
+    if (invalidIndex >= 0) e.questions = `Întrebarea ${invalidIndex + 1} are erori (verifică textul, opțiunile și răspunsul corect).`;
   }
   return e;
 }
+
+const trueFalseOptions = (correct: 'true' | 'false' = 'true') => [
+  { id: `tmp-${Date.now()}-true`, text: 'Adevărat', isCorrect: correct === 'true' },
+  { id: `tmp-${Date.now()}-false`, text: 'Fals', isCorrect: correct === 'false' },
+];
+
+const normalizeQuestionForForm = (question: Question): Question => {
+  if (question.type !== 'true-false' && question.type !== 'true_false') return question;
+  const correctText = question.options.find((option) => option.isCorrect)?.text.toLowerCase() ?? 'adevărat';
+  return {
+    ...question,
+    steps: [],
+    options: trueFalseOptions(correctText.includes('fals') ? 'false' : 'true'),
+  };
+};
+
+const newStep = (): QuestionStep => ({
+  id: `tmp-step-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  order: 1,
+  prompt: '',
+  correctAnswer: '',
+  stepType: 'numeric',
+  tolerance: 0.01,
+  points: 1,
+  unit: '',
+});
 
 const newQuestion = () => ({
   id: `tmp-${Date.now()}`,
@@ -39,6 +69,7 @@ const newQuestion = () => ({
   type: 'single' as QuestionType,
   explanation: '',
   points: 1,
+  steps: [],
   options: [
     { id: `tmp-${Date.now()}-1`, text: '', isCorrect: true },
     { id: `tmp-${Date.now()}-2`, text: '', isCorrect: false },
@@ -50,7 +81,7 @@ const emptyForm = (): TestFormData => ({
   description: '',
   lessonId: '',
   questions: [newQuestion()],
-  duration: 30,
+  duration: 60,
   passingScore: 60,
   status: 'draft'
 });
@@ -65,9 +96,10 @@ interface TestModalProps {
 }
 
 function TestModal({ editTest, lessons, onSave, onClose, isSaving }: TestModalProps) {
+  const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({});
   const [form, setForm] = useState<TestFormData>(
     editTest
-      ? { title: editTest.title, description: editTest.description, lessonId: editTest.lessonId, questions: editTest.questions.length ? editTest.questions : [newQuestion()], duration: editTest.duration, passingScore: editTest.passingScore, status: editTest.status }
+      ? { title: editTest.title, description: editTest.description, lessonId: editTest.lessonId, questions: editTest.questions.length ? editTest.questions.map(normalizeQuestionForForm) : [newQuestion()], duration: editTest.duration, passingScore: editTest.passingScore, status: editTest.status }
       : emptyForm()
   );
   const [errors,  setErrors]  = useState<FE>({});
@@ -94,6 +126,20 @@ function TestModal({ editTest, lessons, onSave, onClose, isSaving }: TestModalPr
     updateQuestions(form.questions.map((q) => {
       if (q.id !== questionId) return q;
       const updated = { ...q, ...patch };
+      if (patch.type === 'stepped' && updated.steps.length === 0) {
+        updated.steps = [{ ...newStep(), order: 1 }, { ...newStep(), order: 2 }];
+        updated.options = [];
+      }
+      if (patch.type === 'true-false' || patch.type === 'true_false') {
+        updated.steps = [];
+        updated.options = trueFalseOptions('true');
+      }
+      if (patch.type && patch.type !== 'stepped' && updated.options.length === 0) {
+        updated.options = [
+          { id: `tmp-${Date.now()}-1`, text: '', isCorrect: true },
+          { id: `tmp-${Date.now()}-2`, text: '', isCorrect: false },
+        ];
+      }
       if (patch.type && patch.type !== 'multiple') {
         let foundCorrect = false;
         updated.options = updated.options.map((o) => {
@@ -109,9 +155,41 @@ function TestModal({ editTest, lessons, onSave, onClose, isSaving }: TestModalPr
     }));
   };
 
+  const updateStep = (questionId: string, stepId: string, patch: Partial<QuestionStep>) => {
+    updateQuestions(form.questions.map((q) => {
+      if (q.id !== questionId) return q;
+      const steps = q.steps.map((step) => step.id === stepId ? { ...step, ...patch } : step);
+      const points = steps.reduce((sum, s) => sum + s.points, 0);
+      return { ...q, steps, points };
+    }));
+  };
+
+  const addStep = (questionId: string) => {
+    updateQuestions(form.questions.map((q) => {
+      if (q.id !== questionId) return q;
+      const steps = [...q.steps, { ...newStep(), order: q.steps.length + 1 }];
+      const points = steps.reduce((sum, s) => sum + s.points, 0);
+      return { ...q, steps, points };
+    }));
+  };
+
+  const removeStep = (questionId: string, stepId: string) => {
+    updateQuestions(form.questions.map((q) => {
+      if (q.id !== questionId || q.steps.length <= 2) return q;
+      const steps = q.steps.filter((step) => step.id !== stepId).map((step, index) => ({ ...step, order: index + 1 }));
+      const points = steps.reduce((sum, s) => sum + s.points, 0);
+      return { ...q, steps, points };
+    }));
+  };
+
   const updateOption = (questionId: string, optionId: string, text: string) => {
     updateQuestions(form.questions.map((q) => q.id === questionId
-      ? { ...q, options: q.options.map((o) => o.id === optionId ? { ...o, text } : o) }
+      ? {
+          ...q,
+          options: q.type === 'true-false' || q.type === 'true_false'
+            ? q.options
+            : q.options.map((o) => o.id === optionId ? { ...o, text } : o),
+        }
       : q));
   };
 
@@ -142,7 +220,7 @@ function TestModal({ editTest, lessons, onSave, onClose, isSaving }: TestModalPr
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const allTouched = Object.fromEntries(Object.keys(form).map((k) => [k, true]));
     setTouched(allTouched);
@@ -156,145 +234,293 @@ function TestModal({ editTest, lessons, onSave, onClose, isSaving }: TestModalPr
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal">
         <div className="modal__header">
-          <h3 style={{ fontFamily: 'var(--font-display)' }}>{editTest ? 'Editeaza Test' : 'Test Nou'}</h3>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--amber)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Evaluare & Testare
+            </span>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', marginTop: 4 }}>
+              {editTest ? 'Editează testul' : 'Creează un test nou'}
+            </h3>
+          </div>
+          <button className="modal__close" onClick={onClose} title="Închide">✕</button>
         </div>
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit} noValidate className="admin-form-container">
           <div className="modal__body">
-            <div className="form-group">
-              <label className="form-label">Titlu *</label>
-              <input name="title" className={`form-input${fe('title') ? ' is-error' : ''}`}
-                value={form.title} onChange={handleChange} onBlur={handleBlur}
-                placeholder="Ex: Test Redox – Nivel Mediu" />
-              {fe('title') && <span className="form-error">⚠ {fe('title')}</span>}
-            </div>
-            <div className="form-group">
-              <label className="form-label">Descriere *</label>
-              <textarea name="description" className={`form-input${fe('description') ? ' is-error' : ''}`}
-                value={form.description} onChange={handleChange} onBlur={handleBlur} rows={3}
-                placeholder="Descriere detaliata a testului..." />
-              {fe('description') && <span className="form-error">⚠ {fe('description')}</span>}
-            </div>
-            <div className="form-group">
-              <label className="form-label">Lectie asociata *</label>
-              <select name="lessonId" className={`form-input${fe('lessonId') ? ' is-error' : ''}`}
-                value={form.lessonId} onChange={handleChange} onBlur={handleBlur}>
-                <option value="">-- Selecteaza lectia --</option>
-                {lessons.map((l) => <option key={l.id} value={l.id}>{l.title}</option>)}
-              </select>
-              {fe('lessonId') && <span className="form-error">⚠ {fe('lessonId')}</span>}
-            </div>
-            <div className="grid-form-2">
-              <div className="form-group">
-                <label className="form-label">Durata (minute) *</label>
-                <input name="duration" type="number" min={5} max={180}
-                  className={`form-input${fe('duration') ? ' is-error' : ''}`}
-                  value={form.duration} onChange={handleChange} onBlur={handleBlur} />
-                {fe('duration') && <span className="form-error">⚠ {fe('duration')}</span>}
+            <div className="admin-form-grid">
+              <div className="admin-form-box">
+                <div className="admin-form-box__title">Configurație Test</div>
+                <div className="flex-col gap-3">
+                  <div className="form-group">
+                    <label className="form-label">Titlu Test *</label>
+                    <input name="title" className={`form-input${fe('title') ? ' is-error' : ''}`}
+                      value={form.title} onChange={handleChange} onBlur={handleBlur}
+                      placeholder="Ex: Test Redox - nivel mediu" />
+                    {fe('title') && <span className="form-error">⚠ {fe('title')}</span>}
+                  </div>
+                  <div className="form-group">
+                    <CustomSelect
+                      label="Lecție Asociată *"
+                      placeholder="Alege lecția..."
+                      value={form.lessonId}
+                      onChange={(val) => setForm((p) => ({ ...p, lessonId: val }))}
+                      options={lessons.map((l) => ({ value: l.id, label: l.title }))}
+                    />
+                    {fe('lessonId') && <span className="form-error">⚠ {fe('lessonId')}</span>}
+                  </div>
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Scor promovare (%) *</label>
-                <input name="passingScore" type="number" min={10} max={100}
-                  className={`form-input${fe('passingScore') ? ' is-error' : ''}`}
-                  value={form.passingScore} onChange={handleChange} onBlur={handleBlur} />
-                {fe('passingScore') && <span className="form-error">⚠ {fe('passingScore')}</span>}
+
+              <div className="admin-form-box">
+                <div className="admin-form-box__title">Parametri Evaluare</div>
+                <div className="grid-form-2">
+                  <div className="form-group">
+                    <label className="form-label">Durata (min) *</label>
+                    <input name="duration" type="number" min={5} max={60}
+                      className={`form-input${fe('duration') ? ' is-error' : ''}`}
+                      value={form.duration} onChange={handleChange} onBlur={handleBlur} />
+                    {fe('duration') && <span className="form-error">⚠ {fe('duration')}</span>}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Promovare (%) *</label>
+                    <input name="passingScore" type="number" min={10} max={100}
+                      className={`form-input${fe('passingScore') ? ' is-error' : ''}`}
+                      value={form.passingScore} onChange={handleChange} onBlur={handleBlur} />
+                    {fe('passingScore') && <span className="form-error">⚠ {fe('passingScore')}</span>}
+                  </div>
+                </div>
+                <div className="form-group mt-3">
+                  <CustomSelect
+                    label="Status Vizibilitate"
+                    value={form.status}
+                    onChange={(val) => setForm((p) => ({ ...p, status: val as TestStatus }))}
+                    options={Object.entries(TEST_STATUS_LABELS).map(([key, label]) => ({ value: key, label }))}
+                  />
+                </div>
               </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Status</label>
-              <select name="status" className="form-input" value={form.status} onChange={handleChange}>
-                <option value="draft">Draft</option>
-                <option value="published">Publicat</option>
-                <option value="archived">Arhivat</option>
-              </select>
             </div>
 
-            <div className="form-group">
-              <div className="flex justify-between items-center" style={{ marginBottom: 10 }}>
-                <label className="form-label" style={{ margin: 0 }}>Intrebari *</label>
+            <div className="admin-form-box">
+              <div className="admin-form-box__title">Descriere Test</div>
+              <textarea name="description" className={`form-input${fe('description') ? ' is-error' : ''}`}
+                value={form.description} onChange={handleChange} onBlur={handleBlur} rows={2}
+                placeholder="Explică elevului ce tip de probleme sau teorie se regăsește în acest test..." />
+              {fe('description') && <span className="form-error">⚠ {fe('description')}</span>}
+            </div>
+
+            <div className="admin-form-box" style={{ background: 'rgba(0, 212, 170, 0.03)' }}>
+              <div className="admin-form-box__title">Întrebări și Punctaj</div>
+              
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-sm text-muted">Construiește structura testului. Punctajul total va fi calculat automat.</p>
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => updateQuestions([...form.questions, newQuestion()])}>
-                  + Intrebare
+                  + Adaugă Întrebare
                 </button>
               </div>
-              {fe('questions') && <span className="form-error">⚠ {fe('questions')}</span>}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 10 }}>
+
+              {fe('questions') && <div className="alert alert-error mb-4">⚠ {fe('questions')}</div>}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {form.questions.map((question, qIndex) => (
-                  <div key={question.id} className="card" style={{ padding: 14, background: 'var(--bg-elevated)' }}>
-                    <div className="flex justify-between items-center" style={{ marginBottom: 12 }}>
-                      <strong>Intrebarea {qIndex + 1}</strong>
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-sm"
-                        disabled={form.questions.length === 1}
-                        onClick={() => updateQuestions(form.questions.filter((q) => q.id !== question.id))}
-                      >
-                        Sterge
-                      </button>
+                  <div key={question.id} className="admin-accordion">
+                    <div 
+                      className="admin-accordion__header"
+                      onClick={() => setExpandedQuestions(prev => ({ ...prev, [question.id]: !prev[question.id] }))}
+                      style={{ cursor: 'pointer', borderLeft: (qIndex === form.questions.length - 1 || expandedQuestions[question.id]) ? '4px solid var(--teal)' : 'none' }}
+                    >
+                      <div className="admin-accordion__title">
+                        <span className="badge badge-teal" style={{ width: 24, height: 24, borderRadius: '50%', padding: 0, justifyContent: 'center' }}>
+                          {qIndex + 1}
+                        </span>
+                        <span style={{ maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {question.text || `Întrebarea ${qIndex + 1}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-xs text-muted font-bold uppercase">{question.type}</div>
+                        <button
+                          type="button"
+                          className="text-red hover:opacity-80"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                          onClick={(e) => { e.stopPropagation(); updateQuestions(form.questions.filter((q) => q.id !== question.id)); }}
+                        >
+                          Elimină
+                        </button>
+                        <span style={{ transform: expandedQuestions[question.id] ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                          ▼
+                        </span>
+                      </div>
                     </div>
-                    <div className="form-group">
-                      <input
-                        className="form-input"
-                        value={question.text}
-                        onChange={(e) => updateQuestion(question.id, { text: e.target.value })}
-                        placeholder="Textul intrebarii"
-                      />
-                    </div>
-                    <div className="grid-form-2">
-                      <select
-                        className="form-input"
-                        value={question.type}
-                        onChange={(e) => updateQuestion(question.id, { type: e.target.value as QuestionType })}
-                      >
-                        <option value="single">Un singur raspuns</option>
-                        <option value="multiple">Raspuns multiplu</option>
-                        <option value="true-false">Adevarat / Fals</option>
-                      </select>
-                      <input
-                        className="form-input"
-                        type="number"
-                        min={1}
-                        value={question.points}
-                        onChange={(e) => updateQuestion(question.id, { points: Number(e.target.value) })}
-                        placeholder="Puncte"
-                      />
-                    </div>
-                    <textarea
-                      className="form-input"
-                      style={{ marginTop: 10 }}
-                      rows={2}
-                      value={question.explanation}
-                      onChange={(e) => updateQuestion(question.id, { explanation: e.target.value })}
-                      placeholder="Explicatie dupa finalizare (optional)"
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
-                      {question.options.map((option, oIndex) => (
-                        <div key={option.id} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 8, alignItems: 'center' }}>
-                          <input
-                            type={question.type === 'multiple' ? 'checkbox' : 'radio'}
-                            checked={option.isCorrect}
-                            onChange={() => toggleCorrect(question.id, option.id)}
-                            aria-label={`Raspuns corect ${oIndex + 1}`}
-                          />
-                          <input
+
+                    {(expandedQuestions[question.id] || qIndex === form.questions.length - 1) && (
+                      <div className="admin-accordion__content">
+                        <div className="form-group mb-4">
+                          <label className="form-label text-xs uppercase">Enunț Întrebare</label>
+                          <textarea
                             className="form-input"
-                            value={option.text}
-                            onChange={(e) => updateOption(question.id, option.id, e.target.value)}
-                            placeholder={`Varianta ${oIndex + 1}`}
+                            rows={2}
+                            value={question.text}
+                            onChange={(e) => updateQuestion(question.id, { text: e.target.value })}
+                            placeholder="Introdu enunțul problemei..."
                           />
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-sm"
-                            disabled={question.options.length <= 2}
-                            onClick={() => removeOption(question.id, option.id)}
-                          >
-                            ✕
-                          </button>
                         </div>
-                      ))}
-                    </div>
-                    <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 10 }} onClick={() => addOption(question.id)}>
-                      + Varianta
-                    </button>
+
+                        <div className="grid-form-2 mb-4">
+                          <div className="form-group">
+                            <CustomSelect
+                              label="Tip Întrebare"
+                              value={question.type}
+                              onChange={(val) => updateQuestion(question.id, { type: val as QuestionType })}
+                              options={[
+                                { value: 'single', label: 'Un singur răspuns (Radio)' },
+                                { value: 'multiple', label: 'Răspuns multiplu (Checkbox)' },
+                                { value: 'true-false', label: 'Adevărat / Fals (Selectoare)' },
+                                { value: 'stepped', label: 'Calcul pe etape (Secvențial)' },
+                              ]}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label text-xs uppercase">Punctaj Întrebare</label>
+                            <input
+                              className="form-input"
+                              type="number"
+                              min={1}
+                              value={question.points}
+                              readOnly={question.type === 'stepped'}
+                              onChange={(e) => updateQuestion(question.id, { points: Number(e.target.value) })}
+                              style={question.type === 'stepped' ? { opacity: 0.7, cursor: 'not-allowed', background: 'var(--bg-elevated)' } : {}}
+                            />
+                            {question.type === 'stepped' && <span className="text-xs text-muted">Calculat automat din etape</span>}
+                          </div>
+                        </div>
+
+                        <div className="form-group mb-4">
+                          <label className="form-label text-xs uppercase">Explicație (afișată la final)</label>
+                          <textarea
+                            className="form-input"
+                            rows={1}
+                            value={question.explanation}
+                            onChange={(e) => updateQuestion(question.id, { explanation: e.target.value })}
+                            placeholder="Explică raționamentul răspunsului corect..."
+                          />
+                        </div>
+
+                        {question.type === 'stepped' ? (
+                          <div className="admin-form-box" style={{ background: 'rgba(255, 255, 255, 0.05)', marginTop: 10 }}>
+                            <div className="flex justify-between items-center mb-3">
+                              <strong style={{ fontSize: '0.85rem' }}>Etape de calcul necesare</strong>
+                              <button type="button" className="btn btn-secondary btn-sm" onClick={() => addStep(question.id)}>+ Adaugă Etapă</button>
+                            </div>
+                            <div className="flex-col gap-3">
+                              {question.steps.map((step, stepIndex) => (
+                                <div key={step.id} className="admin-card" style={{ display: 'block', padding: 14, background: 'rgba(15, 22, 40, 0.6)' }}>
+                                  <div className="flex justify-between items-center mb-3">
+                                    <span className="text-sm font-bold text-teal">Etapa {stepIndex + 1}</span>
+                                    <button type="button" className="btn btn-ghost btn-sm" disabled={question.steps.length <= 2} onClick={() => removeStep(question.id, step.id)}>✕</button>
+                                  </div>
+                                  <textarea
+                                    className="form-input mb-3"
+                                    rows={1}
+                                    value={step.prompt}
+                                    onChange={(e) => updateStep(question.id, step.id, { prompt: e.target.value })}
+                                    placeholder="Ce trebuie să calculeze elevul?"
+                                  />
+                                  <div className="grid-form-2">
+                                    <div className="form-group">
+                                      <label className="form-label">Răspuns Corect</label>
+                                      <input
+                                        className="form-input font-mono"
+                                        value={step.correctAnswer}
+                                        onChange={(e) => updateStep(question.id, step.id, { correctAnswer: e.target.value })}
+                                        placeholder="Valoare numerică sau text"
+                                      />
+                                    </div>
+                                    <div className="form-group">
+                                      <label className="form-label">Tip Răspuns</label>
+                                      <CustomSelect
+                                        value={step.stepType}
+                                        onChange={(val) => updateStep(question.id, step.id, { stepType: val as QuestionStep['stepType'] })}
+                                        options={[
+                                          { value: 'numeric', label: 'Numeric (cu toleranță)' },
+                                          { value: 'text', label: 'Text (exact)' }
+                                        ]}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="grid-form-2 mt-3">
+                                    <div className="form-group">
+                                      <label className="form-label text-xs">Unitate de măsură</label>
+                                      <input className="form-input" value={step.unit ?? ''} onChange={(e) => updateStep(question.id, step.id, { unit: e.target.value })} placeholder="Ex: g, mol/L, %" />
+                                    </div>
+                                    <div className="form-group">
+                                      <label className="form-label text-xs">Puncte etapă</label>
+                                      <input className="form-input" type="number" min={1} value={step.points} onChange={(e) => updateStep(question.id, step.id, { points: Number(e.target.value) })} />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="admin-form-box" style={{ background: 'rgba(255, 255, 255, 0.05)', marginTop: 10 }}>
+                            <div className="flex justify-between items-center mb-3">
+                              <strong style={{ fontSize: '0.85rem' }}>Opțiuni de răspuns</strong>
+                              {!(question.type === 'true-false' || question.type === 'true_false') && (
+                                <button type="button" className="btn btn-ghost btn-sm" onClick={() => addOption(question.id)}>+ Adaugă Variantă</button>
+                              )}
+                            </div>
+                            <div className="flex-col gap-3">
+                              {question.type === 'true-false' || question.type === 'true_false' ? (
+                                <div className="tf-admin-toggle">
+                                  {question.options.map((option) => (
+                                    <button
+                                      key={option.id}
+                                      type="button"
+                                      className={`tf-admin-btn${option.isCorrect ? ' tf-admin-btn--active' : ''}`}
+                                      onClick={() => toggleCorrect(question.id, option.id)}
+                                    >
+                                      <span>{option.text === 'Adevărat' ? '✅' : '❌'}</span>
+                                      {option.text} {option.isCorrect && ' (Corect)'}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                question.options.map((option, oIndex) => (
+                                  <div key={option.id} className="admin-card" style={{ padding: 12, background: 'rgba(15, 22, 40, 0.6)' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 12, alignItems: 'center' }}>
+                                      <div 
+                                        onClick={() => toggleCorrect(question.id, option.id)}
+                                        style={{ 
+                                          cursor: 'pointer', width: 22, height: 22, borderRadius: question.type === 'multiple' ? '4px' : '50%',
+                                          border: `2px solid ${option.isCorrect ? 'var(--teal)' : 'var(--text-muted)'}`,
+                                          background: option.isCorrect ? 'var(--teal)' : 'transparent',
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-base)', fontSize: '0.7rem'
+                                        }}
+                                      >
+                                        {option.isCorrect && '✓'}
+                                      </div>
+                                      <input
+                                        className="form-input"
+                                        value={option.text}
+                                        onChange={(e) => updateOption(question.id, option.id, e.target.value)}
+                                        placeholder={`Varianta ${oIndex + 1}`}
+                                      />
+                                      <button
+                                        type="button"
+                                        className="btn btn-ghost btn-sm"
+                                        disabled={question.options.length <= 2}
+                                        onClick={() => removeOption(question.id, option.id)}
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -305,7 +531,7 @@ function TestModal({ editTest, lessons, onSave, onClose, isSaving }: TestModalPr
             <button type="submit" className="btn btn-primary" disabled={isSaving}>
               {isSaving
                 ? <><span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Salvare...</>
-                : editTest ? '✓ Actualizeaza' : '+ Creeaza Test'}
+                : editTest ? '✓ Actualizează' : '+ Creează test'}
             </button>
           </div>
         </form>
@@ -322,20 +548,20 @@ function DeleteModal({ test, onConfirm, onClose, isDeleting }: DelModalProps) {
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal" style={{ maxWidth: 420 }}>
         <div className="modal__header">
-          <h3 style={{ fontFamily: 'var(--font-display)', color: 'var(--red)' }}>Confirmare stergere</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', color: 'var(--red)' }}>Confirmare ștergere</h3>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
         </div>
         <p className="text-muted" style={{ lineHeight: 1.65 }}>
-          Esti sigur ca doresti sa stergi testul:
+          Ești sigur că dorești să ștergi testul:
         </p>
         <p className="font-bold" style={{ marginTop: 12, marginBottom: 12 }}>„{test.title}"</p>
-        <p style={{ color: 'var(--red)', fontSize: '0.88rem' }}>⚠ Aceasta actiune este ireversibila.</p>
+        <p style={{ color: 'var(--red)', fontSize: '0.88rem' }}>⚠ Această acțiune este ireversibilă.</p>
         <div className="modal__footer">
           <button className="btn btn-secondary" onClick={onClose}>Anulare</button>
           <button className="btn btn-danger" onClick={onConfirm} disabled={isDeleting}>
             {isDeleting
-              ? <><span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Stergere...</>
-              : '🗑 Sterge definitiv'}
+              ? <><span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Ștergere...</>
+              : '🗑 Șterge definitiv'}
           </button>
         </div>
       </div>
@@ -371,7 +597,7 @@ export function AdminTestsPage() {
     try {
       const [t, l] = await Promise.all([TestService.getAll(), LessonService.getAll()]);
       setTests(t); setLessons(l);
-    } catch (e) { setError(e instanceof Error ? e.message : 'Eroare la incarcare.'); }
+    } catch (e) { setError(e instanceof Error ? e.message : 'Eroare la încărcare.'); }
     finally { setLoading(false); }
   }, []);
 
@@ -422,9 +648,9 @@ export function AdminTestsPage() {
     try {
       await TestService.delete(deleteTarget.id);
       setTests((p) => p.filter((t) => t.id !== deleteTarget.id));
-      showToast('Testul a fost sters.');
+      showToast('Testul a fost șters.');
       setDeleteTarget(null);
-    } catch (e) { setError(e instanceof Error ? e.message : 'Eroare la stergere.'); }
+    } catch (e) { setError(e instanceof Error ? e.message : 'Eroare la ștergere.'); }
     finally { setIsDeleting(false); }
   };
 
@@ -444,14 +670,21 @@ export function AdminTestsPage() {
       <div className="filter-bar">
         <div className="search-wrap">
           <span className="search-icon">⌕</span>
-          <input className="form-input" placeholder="Cauta teste..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="form-input" placeholder="Caută teste..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <select className="form-input" style={{ width: 'auto', minWidth: 150 }} value={statFlt} onChange={(e) => setStatFlt(e.target.value as TestStatus | '')}>
-          <option value="">Orice status</option>
-          <option value="draft">Draft</option>
-          <option value="published">Publicat</option>
-          <option value="archived">Arhivat</option>
-        </select>
+        <div style={{ width: 180 }}>
+          <CustomSelect
+            placeholder="Orice status"
+            value={statFlt}
+            onChange={(val) => setStatFlt(val as TestStatus | '')}
+            options={[
+              { value: '', label: 'Orice status' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'published', label: 'Publicat' },
+              { value: 'archived', label: 'Arhivat' }
+            ]}
+          />
+        </div>
         {(['title', 'status', 'createdAt'] as Sort[]).map((k) => (
           <button key={k} className={`btn btn-sm ${sort === k ? 'btn-secondary' : 'btn-ghost'}`} onClick={() => toggleSort(k)}>
             {k === 'title' ? 'Titlu' : k === 'status' ? 'Status' : 'Data'}
@@ -464,7 +697,7 @@ export function AdminTestsPage() {
       {filtered.length === 0 && (
         <div className="state-center">
           <div className="state-icon">⬙</div>
-          <p className="state-label">{tests.length === 0 ? 'Nu exista teste. Creeaza primul!' : 'Niciun test nu corespunde filtrelor.'}</p>
+          <p className="state-label">{tests.length === 0 ? 'Nu există teste. Creează primul!' : 'Niciun test nu corespunde filtrelor.'}</p>
         </div>
       )}
 
@@ -475,8 +708,8 @@ export function AdminTestsPage() {
             <thead>
               <tr>
                 <th>Titlu</th>
-                <th>Lectie</th>
-                <th>Intrebari</th>
+                <th>Lecție</th>
+                <th>Întrebări</th>
                 <th>Durata</th>
                 <th>Promovare</th>
                 <th>Status</th>
@@ -498,7 +731,7 @@ export function AdminTestsPage() {
                   <td className="text-sm text-muted">{new Date(t.createdAt).toLocaleDateString('ro-RO')}</td>
                   <td>
                     <div className="flex gap-2">
-                      <button className="btn btn-secondary btn-sm" onClick={() => { setEditTest(t); setShowForm(true); }}>✎ Editeaza</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => { setEditTest(t); setShowForm(true); }}>✎ Editează</button>
                       <button className="btn btn-danger btn-sm" onClick={() => setDeleteTarget(t)}>🗑</button>
                     </div>
                   </td>
