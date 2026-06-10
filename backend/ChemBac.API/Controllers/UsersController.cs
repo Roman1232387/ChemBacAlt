@@ -34,12 +34,13 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public IActionResult GetById(int id)
     {
         try
         {
             var user = _userAction.GetUserByIdAction(id);
-            if (user == null) return NotFound(new { message = "Utilizatorul nu a fost gasit." });
+            if (user == null) return NotFound(new { message = "Utilizatorul nu a fost găsit." });
             return Ok(user);
         }
         catch (Exception ex)
@@ -48,35 +49,9 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpPost("register")]
-    public IActionResult Register([FromBody] UserRegisterDto data)
-    {
-        try
-        {
-            var response = _userAction.RegisterUserAction(data);
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = $"Eroare BD: {ex.Message}" });
-        }
-    }
-
-    [HttpPost("login")]
-    public IActionResult Login([FromBody] UserLoginDto data)
-    {
-        try
-        {
-            var response = _userAction.LoginUserAction(data);
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = $"Eroare BD: {ex.Message}" });
-        }
-    }
 
     [HttpPut]
+    [Authorize(Roles = "Admin")]
     public IActionResult Update([FromBody] UserResponseDto data)
     {
         try
