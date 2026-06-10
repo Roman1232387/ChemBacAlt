@@ -1,49 +1,44 @@
 import axiosInstance from './axiosInstance';
-
-const TOKEN_KEY = 'chem_bac_token';
+import type { AuthUser } from '../models/User';
 
 interface AuthResponse {
   isSuccess: boolean;
   message?: string;
-  token?: string;
+  user?: AuthUser;
 }
 
-const saveToken = (token: string): void => {
-  localStorage.setItem(TOKEN_KEY, token);
-};
-
-const requireToken = (data: AuthResponse): string => {
-  if (!data.isSuccess) throw new Error(data.message ?? 'Autentificare esuata.');
-  if (!data.token) throw new Error('Serverul nu a returnat token JWT.');
-  saveToken(data.token);
-  return data.token;
-};
-
 export const AuthService = {
-  async login(credentials: { email: string; password: string }): Promise<string> {
+  async login(credentials: { email: string; password: string }): Promise<AuthUser> {
     const response = await axiosInstance.post<AuthResponse>('/auth/login', {
       email: credentials.email,
       password: credentials.password,
     });
 
-    return requireToken(response.data);
+    if (!response.data.isSuccess || !response.data.user) {
+      throw new Error(response.data.message ?? 'Autentificare eșuată.');
+    }
+    return response.data.user;
   },
 
-  async register(userData: { name: string; email: string; password: string }): Promise<string> {
-    const response = await axiosInstance.post<AuthResponse>('/auth/register', {
-      name: userData.name,
-      email: userData.email,
-      password: userData.password,
-    });
+  async register(userData: { name: string; email: string; password: string }): Promise<AuthUser> {
+    const response = await axiosInstance.post<AuthResponse>('/auth/register', userData);
 
-    return requireToken(response.data);
+    if (!response.data.isSuccess || !response.data.user) {
+      throw new Error(response.data.message ?? 'Înregistrare eșuată.');
+    }
+    return response.data.user;
   },
 
-  logout(): void {
-    localStorage.removeItem(TOKEN_KEY);
+  async getMe(): Promise<AuthUser> {
+    const response = await axiosInstance.get<AuthUser>('/auth/me');
+    return response.data;
   },
 
-  restoreToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+  async logout(): Promise<void> {
+    try {
+      await axiosInstance.post('/auth/logout');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   },
 };

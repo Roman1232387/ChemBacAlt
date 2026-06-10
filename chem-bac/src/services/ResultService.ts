@@ -24,6 +24,11 @@ export const ResultService = {
     return response.data.map(mapResult);
   },
 
+  async getAll(): Promise<Result[]> {
+    const response = await axiosInstance.get('/result/all');
+    return response.data.map(mapResult);
+  },
+
   async getById(id: string): Promise<Result> {
     const response = await axiosInstance.get(`/result?id=${id}`);
     return mapResult(response.data);
@@ -33,9 +38,20 @@ export const ResultService = {
     const questionResults: QuestionResult[] = test.questions.map((q) => {
       const userAnswer = answers.find((a) => a.questionId === q.id);
       const userIds = userAnswer?.selectedOptionIds ?? [];
-      const correctIds = q.options.filter((o) => o.isCorrect).map((o) => o.id);
+      const correctIds = (q.options ?? []).filter((o) => o.isCorrect).map((o) => o.id);
       let isCorrect = false;
-      if (q.type === 'single' || q.type === 'true-false') {
+      if (q.type === 'stepped') {
+        const pointsAvailable = (q.steps ?? []).reduce((acc, step) => acc + step.points, 0) || q.points;
+        const pointsEarned = userAnswer?.steppedPointsEarned ?? 0;
+        return {
+          questionId: q.id,
+          userAnswerIds: [],
+          isCorrect: pointsEarned === pointsAvailable,
+          pointsEarned,
+          pointsAvailable,
+        };
+      }
+      if (q.type === 'single' || q.type === 'true-false' || q.type === 'true_false') {
         isCorrect = userIds.length === 1 && correctIds.includes(userIds[0]);
       } else {
         isCorrect = userIds.length === correctIds.length && correctIds.every((cid) => userIds.includes(cid));
@@ -71,9 +87,12 @@ export const ResultService = {
     });
 
     if (!response.data.isSuccess) throw new Error(response.data.message);
+    if (typeof response.data.id === 'undefined' || response.data.id === null) {
+      throw new Error('Serverul nu a returnat id-ul rezultatului salvat.');
+    }
 
     return {
-      id: String(Date.now()),
+      id: String(response.data.id),
       userId,
       testId: test.id,
       score,
@@ -86,5 +105,14 @@ export const ResultService = {
       completedAt,
       duration,
     };
+  },
+
+  async verifyStep(questionId: string, stepId: string, userAnswer: string): Promise<{ isCorrect: boolean; correctAnswer?: string; pointsEarned: number }> {
+    const response = await axiosInstance.post('/result/verify-step', {
+      questionId: Number(questionId),
+      stepId: Number(stepId),
+      userAnswer,
+    });
+    return response.data;
   },
 };
