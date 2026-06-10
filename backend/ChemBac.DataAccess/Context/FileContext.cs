@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChemBac.DataAccess.Context;
 
-public class ResultContext : DbContext
+public class FileContext : DbContext
 {
-    public DbSet<Result> Results { get; set; }
+    public DbSet<UploadedFile> UploadedFiles { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

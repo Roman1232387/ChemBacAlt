@@ -8,10 +8,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace ChemBac.DataAccess.Migrations.Result
+namespace ChemBac.DataAccess.Migrations.File
 {
-    [DbContext(typeof(ResultContext))]
-    partial class ResultContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(FileContext))]
+    partial class FileContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -22,7 +22,7 @@ namespace ChemBac.DataAccess.Migrations.Result
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("ChemBac.Domain.Entities.Result", b =>
+            modelBuilder.Entity("ChemBac.Domain.Entities.UploadedFile", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,44 +30,38 @@ namespace ChemBac.DataAccess.Migrations.Result
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AnswersJson")
+                    b.Property<string>("Category")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("CompletedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<int>("Duration")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("MaxScore")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Passed")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("Percentage")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("QuestionResultsJson")
+                    b.Property<string>("FileType")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Score")
-                        .HasColumnType("integer");
+                    b.Property<string>("OriginalName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<DateTime>("StartedAt")
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StoredName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UploadedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<int>("TestId")
+                    b.Property<int>("UploadedByUserId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Results");
+                    b.ToTable("UploadedFiles");
                 });
 #pragma warning restore 612, 618
         }

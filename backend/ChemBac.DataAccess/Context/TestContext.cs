@@ -8,6 +8,7 @@ public class TestContext : DbContext
     public DbSet<Test> Tests { get; set; }
     public DbSet<Question> Questions { get; set; }
     public DbSet<QuestionOption> QuestionOptions { get; set; }
+    public DbSet<QuestionStep> QuestionSteps { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -29,6 +30,14 @@ public class TestContext : DbContext
             e.HasOne(o => o.Question)
              .WithMany(q => q.Options)
              .HasForeignKey(o => o.QuestionId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<QuestionStep>(e =>
+        {
+            e.HasOne(s => s.Question)
+             .WithMany(q => q.Steps)
+             .HasForeignKey(s => s.QuestionId)
              .OnDelete(DeleteBehavior.Cascade);
         });
     }

@@ -5,6 +5,7 @@ namespace ChemBac.DataAccess.Context;
 
 public class LessonContext : DbContext
 {
+    public DbSet<Chapter> Chapters { get; set; }
     public DbSet<Lesson> Lessons { get; set; }
     public DbSet<LessonSection> LessonSections { get; set; }
 
@@ -15,6 +16,14 @@ public class LessonContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Chapter>(e =>
+        {
+            e.HasMany(c => c.Lessons)
+             .WithOne(l => l.Chapter)
+             .HasForeignKey(l => l.ChapterId)
+             .OnDelete(DeleteBehavior.SetNull);
+        });
+
         modelBuilder.Entity<LessonSection>(e =>
         {
             e.HasOne(s => s.Lesson)
