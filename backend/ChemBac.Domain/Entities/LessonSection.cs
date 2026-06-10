@@ -17,9 +17,17 @@ public class LessonSection
     public string Content { get; set; } = string.Empty;
 
     [StringLength(500)]
-    public string? Formula { get; set; }
+    public string Formula { get; set; } = string.Empty;
 
     public int Order { get; set; }
+
+    [StringLength(30)]
+    public string Type { get; set; } = "text";
+
+    [StringLength(1000)]
+    public string? ImageUrl { get; set; }
+
+    public string? TableJson { get; set; }
 
     public int LessonId { get; set; }
     public Lesson Lesson { get; set; } = null!;

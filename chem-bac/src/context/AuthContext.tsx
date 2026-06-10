@@ -9,52 +9,6 @@ import React, {
 import type { AuthUser, LoginCredentials } from '../models/User';
 import { AuthService } from '../services/AuthService';
 
-interface JwtPayload {
-  userId?: string;
-  name?: string;
-  email?: string;
-  role?: string;
-  exp?: number;
-}
-
-const decodeJwtPayload = (token: string): JwtPayload | null => {
-  try {
-    const payload = token.split('.')[1];
-    if (!payload) return null;
-    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const json = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`)
-        .join('')
-    );
-    return JSON.parse(json) as JwtPayload;
-  } catch {
-    return null;
-  }
-};
-
-const mapTokenToUser = (token: string): AuthUser | null => {
-  const payload = decodeJwtPayload(token);
-  if (!payload?.userId || !payload.email || !payload.name || !payload.role) return null;
-  if (payload.exp && payload.exp * 1000 <= Date.now()) return null;
-
-  const role = payload.role.toLowerCase() === 'admin' ? 'admin' : 'user';
-  return {
-    id: payload.userId,
-    name: payload.name,
-    email: payload.email,
-    role,
-    avatarInitials: payload.name
-      .split(' ')
-      .filter(Boolean)
-      .map((part) => part[0])
-      .join('')
-      .toUpperCase(),
-    createdAt: '',
-  };
-};
-
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
@@ -69,6 +23,21 @@ interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
+const mapToAuthUser = (userData: any): AuthUser => {
+  return {
+    ...userData,
+    id: String(userData.id),
+    role: (userData.role?.toLowerCase() === 'admin' ? 'admin' : 'user') as any,
+    avatarInitials: userData.name
+      .split(' ')
+      .filter(Boolean)
+      .map((part: string) => part[0])
+      .join('')
+      .toUpperCase(),
+    createdAt: userData.createdAt || '',
+  };
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,26 +45,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Restore session on page refresh
   useEffect(() => {
-    const token = AuthService.restoreToken();
-    const restored = token ? mapTokenToUser(token) : null;
-    if (restored) {
-      setUser(restored);
-    } else {
-      AuthService.logout();
-    }
-    setIsLoading(false);
+    const restoreSession = async () => {
+      try {
+        const userData = await AuthService.getMe();
+        if (userData) {
+          setUser(mapToAuthUser(userData));
+        }
+      } catch (err) {
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    restoreSession();
   }, []);
 
   const login = useCallback(async (credentials: LoginCredentials) => {
     setIsLoading(true);
     setError(null);
     try {
-      const token = await AuthService.login(credentials);
-      const authUser = mapTokenToUser(token);
-      if (!authUser) throw new Error('Token JWT invalid.');
-      setUser(authUser);
+      const authUserRaw = await AuthService.login(credentials);
+      setUser(mapToAuthUser(authUserRaw));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Eroare necunoscuta.';
+      const msg = err instanceof Error ? err.message : 'Eroare necunoscută.';
       setError(msg);
       throw err;
     } finally {
@@ -107,12 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      const token = await AuthService.register(userData);
-      const authUser = mapTokenToUser(token);
-      if (!authUser) throw new Error('Token JWT invalid.');
-      setUser(authUser);
+      const authUserRaw = await AuthService.register(userData);
+      setUser(mapToAuthUser(authUserRaw));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Eroare necunoscuta.';
+      const msg = err instanceof Error ? err.message : 'Eroare necunoscută.';
       setError(msg);
       throw err;
     } finally {
@@ -120,10 +91,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    AuthService.logout();
-    setUser(null);
-    setError(null);
+  const logout = useCallback(async () => {
+    try {
+      await AuthService.logout();
+    } finally {
+      setUser(null);
+      setError(null);
+      window.location.href = '/login';
+    }
   }, []);
 
   const clearError = useCallback(() => setError(null), []);

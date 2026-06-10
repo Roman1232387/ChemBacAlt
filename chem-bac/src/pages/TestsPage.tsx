@@ -65,11 +65,11 @@ export function TestsPage() {
       <div className="filter-bar">
         <div className="search-wrap">
           <span className="search-icon">⌕</span>
-          <input className="form-input" placeholder="Cauta teste..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="form-input" placeholder="Caută teste..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         {(['title', 'duration', 'passingScore'] as Sort[]).map((k) => (
           <button key={k} className={`btn btn-sm ${sort === k ? 'btn-secondary' : 'btn-ghost'}`} onClick={() => toggleSort(k)}>
-            {k === 'title' ? 'Titlu' : k === 'duration' ? 'Durata' : 'Promovare'}
+            {k === 'title' ? 'Titlu' : k === 'duration' ? 'Durată' : 'Promovare'}
             {sort === k && (dir === 'asc' ? ' ↑' : ' ↓')}
           </button>
         ))}
@@ -95,12 +95,12 @@ export function TestsPage() {
               <h4 style={{ fontFamily: 'var(--font-display)' }}>{t.title}</h4>
               <p className="text-sm text-muted">{t.description}</p>
               <div className="flex gap-2 flex-wrap">
-                <span className="badge badge-neutral">{t.questions.length} intrebari</span>
+                <span className="badge badge-neutral">{t.questions.length} întrebări</span>
                 <span className="badge badge-amber">Promovare: {t.passingScore}%</span>
                 {lesson && <span className="badge badge-neutral">{lesson.title.slice(0, 22)}…</span>}
               </div>
               <Link to={`/teste/${t.id}`} className="btn btn-primary btn-full" style={{ marginTop: 'auto' }}>
-                Sustine testul →
+                Susține testul →
               </Link>
             </div>
           );

@@ -1,123 +1,198 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ChapterService } from '../services/ChapterService';
 import { LessonService } from '../services/LessonService';
-import type { Lesson, LessonDifficulty, LessonCategory } from '../models/Lesson';
-import { DIFFICULTY_LABELS, CATEGORY_LABELS } from '../models/Lesson';
-
-type SortKey = 'title' | 'duration' | 'difficulty';
-const DIFF_ORDER: Record<LessonDifficulty, number> = { beginner: 1, intermediate: 2, advanced: 3 };
+import type { Chapter, Lesson, LessonCategory, LessonDifficulty } from '../models/Lesson';
+import { CATEGORY_LABELS, DIFFICULTY_LABELS } from '../models/Lesson';
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 export function LessonsPage() {
-  const [lessons,  setLessons]  = useState<Lesson[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState<string | null>(null);
-  const [search,   setSearch]   = useState('');
-  const [diffFilt, setDiffFilt] = useState<LessonDifficulty | ''>('');
-  const [catFilt,  setCatFilt]  = useState<LessonCategory | ''>('');
-  const [sortKey,  setSortKey]  = useState<SortKey>('title');
-  const [sortDir,  setSortDir]  = useState<'asc' | 'desc'>('asc');
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [diffFilter, setDiffFilter] = useState<LessonDifficulty | ''>('');
+  const [catFilter, setCatFilter] = useState<LessonCategory | ''>('');
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
-    try { setLessons(await LessonService.getAll()); }
-    catch (e) { setError(e instanceof Error ? e.message : 'Eroare.'); }
-    finally { setLoading(false); }
+    setLoading(true);
+    setError(null);
+    try {
+      const [loadedLessons, loadedChapters] = await Promise.all([
+        LessonService.getAll(),
+        ChapterService.getAll().catch(() => []),
+      ]);
+      const orderedChapters = [...loadedChapters].sort((a, b) => a.order - b.order);
+      setLessons(loadedLessons);
+      setChapters(orderedChapters);
+      setExpanded(new Set(orderedChapters.map((chapter) => chapter.id)));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Eroare la încărcarea lecțiilor.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => {
-    let list = [...lessons];
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((l) => l.title.toLowerCase().includes(q) || l.tags.some((t) => t.toLowerCase().includes(q)));
-    }
-    if (diffFilt) list = list.filter((l) => l.difficulty === diffFilt);
-    if (catFilt)  list = list.filter((l) => l.category === catFilt);
-    list.sort((a, b) => {
-      const cmp = sortKey === 'title' ? a.title.localeCompare(b.title)
-                : sortKey === 'duration' ? a.duration - b.duration
-                : DIFF_ORDER[a.difficulty] - DIFF_ORDER[b.difficulty];
-      return sortDir === 'asc' ? cmp : -cmp;
+    const query = search.trim().toLowerCase();
+    return lessons.filter((lesson) => {
+      const matchesSearch = !query ||
+        lesson.title.toLowerCase().includes(query) ||
+        lesson.description.toLowerCase().includes(query);
+      const matchesDifficulty = !diffFilter || lesson.difficulty === diffFilter;
+      const matchesCategory = !catFilter || lesson.category === catFilter;
+      return matchesSearch && matchesDifficulty && matchesCategory;
     });
-    return list;
-  }, [lessons, search, diffFilt, catFilt, sortKey, sortDir]);
+  }, [catFilter, diffFilter, lessons, search]);
 
-  const toggleSort = (k: SortKey) => {
-    if (sortKey === k) setSortDir((d) => d === 'asc' ? 'desc' : 'asc');
-    else { setSortKey(k); setSortDir('asc'); }
+  const grouped = useMemo(() => {
+    const chapterMap = new Map(chapters.map((chapter) => [chapter.id, chapter]));
+    const groups = chapters.map((chapter) => ({
+      chapter,
+      lessons: filtered
+        .filter((lesson) => lesson.chapterId === chapter.id)
+        .sort((a, b) => a.title.localeCompare(b.title)),
+    }));
+
+    const withoutChapter = filtered.filter((lesson) => !lesson.chapterId || !chapterMap.has(lesson.chapterId));
+    if (withoutChapter.length > 0) {
+      groups.push({
+        chapter: { id: 'uncategorized', title: 'Fără capitol', profile: 'general', order: 999 },
+        lessons: withoutChapter,
+      });
+    }
+
+    return groups.filter((group) => group.lessons.length > 0);
+  }, [chapters, filtered]);
+
+  const toggleChapter = (chapterId: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(chapterId)) next.delete(chapterId);
+      else next.add(chapterId);
+      return next;
+    });
   };
 
-  if (loading) return <div className="state-center"><div className="spinner" /><p className="state-label">Se incarca lectiile...</p></div>;
-  if (error)   return <div className="state-center state-error"><p>⚠ {error}</p><button className="btn btn-secondary btn-sm" onClick={load}>Reincearca</button></div>;
+  if (loading) {
+    return (
+      <div className="state-center">
+        <div className="spinner" />
+        <p className="state-label">Se încarcă lecțiile...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="state-center state-error">
+        <p>{error}</p>
+        <button className="btn btn-secondary btn-sm" onClick={load}>Reîncearcă</button>
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="page-header">
         <div>
-          <h2>Lectii de Chimie</h2>
-          <p className="page-header__sub">{filtered.length} din {lessons.length} lectii afisate</p>
+          <h2>Lecții pentru Bacalaureat</h2>
+          <p className="page-header__sub">{filtered.length} din {lessons.length} lecții afișate, grupate pe capitole.</p>
         </div>
       </div>
 
-      {/* Filter Bar */}
       <div className="filter-bar">
         <div className="search-wrap">
           <span className="search-icon">⌕</span>
-          <input className="form-input" placeholder="Cauta lectii..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="form-input" placeholder="Caută lecții, concepte, reacții..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <select className="form-input" style={{ width: 'auto', minWidth: 160 }} value={diffFilt} onChange={(e) => setDiffFilt(e.target.value as LessonDifficulty | '')}>
-          <option value="">Orice dificultate</option>
-          <option value="beginner">Initiere</option>
-          <option value="intermediate">Mediu</option>
-          <option value="advanced">Avansat</option>
-        </select>
-        <select className="form-input" style={{ width: 'auto', minWidth: 180 }} value={catFilt} onChange={(e) => setCatFilt(e.target.value as LessonCategory | '')}>
-          <option value="">Orice categorie</option>
-          {(Object.entries(CATEGORY_LABELS) as [LessonCategory, string][]).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
-        <div className="flex gap-2">
-          {(['title', 'duration', 'difficulty'] as SortKey[]).map((k) => (
-            <button key={k} className={`btn btn-sm ${sortKey === k ? 'btn-secondary' : 'btn-ghost'}`} onClick={() => toggleSort(k)}>
-              {k === 'title' ? 'Titlu' : k === 'duration' ? 'Durata' : 'Nivel'}
-              {sortKey === k && (sortDir === 'asc' ? ' ↑' : ' ↓')}
-            </button>
-          ))}
+        <div style={{ width: 180 }}>
+          <CustomSelect
+            placeholder="Orice nivel"
+            value={diffFilter}
+            onChange={(val) => setDiffFilter(val as LessonDifficulty | '')}
+            options={[
+              { value: '', label: 'Orice nivel' },
+              { value: 'beginner', label: 'Inițiere' },
+              { value: 'intermediate', label: 'Mediu' },
+              { value: 'advanced', label: 'Avansat' }
+            ]}
+          />
+        </div>
+        <div style={{ width: 220 }}>
+          <CustomSelect
+            placeholder="Orice categorie"
+            value={catFilter}
+            onChange={(val) => setCatFilter(val as LessonCategory | '')}
+            options={[
+              { value: '', label: 'Orice categorie' },
+              ...(Object.entries(CATEGORY_LABELS) as [LessonCategory, string][]).map(([key, label]) => ({ value: key, label }))
+            ]}
+          />
         </div>
       </div>
 
-      {/* Empty State */}
-      {filtered.length === 0 && (
+      {grouped.length === 0 ? (
         <div className="state-center">
-          <div className="state-icon">◈</div>
-          <p className="state-label">Nicio lectie nu corespunde filtrelor.</p>
-          <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setDiffFilt(''); setCatFilt(''); }}>
-            Reseteaza filtrele
+          <div className="state-icon">📚</div>
+          <p className="state-label">Nicio lecție nu corespunde filtrelor.</p>
+          <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setDiffFilter(''); setCatFilter(''); }}>
+            Resetează filtrele
           </button>
         </div>
-      )}
+      ) : (
+        <div className="lesson-chapters">
+          {grouped.map(({ chapter, lessons: chapterLessons }) => {
+            const isOpen = expanded.has(chapter.id);
+            return (
+              <section key={chapter.id} className="chapter-panel">
+                <button className="chapter-panel__header" onClick={() => toggleChapter(chapter.id)}>
+                  <span>
+                    <strong>{chapter.title}</strong>
+                    <small>{chapterLessons.length} lecții · profil {chapter.profile}</small>
+                  </span>
+                  <span className="chapter-panel__toggle">{isOpen ? '−' : '+'}</span>
+                </button>
 
-      {/* Grid */}
-      <div className="grid-2">
-        {filtered.map((l) => (
-          <Link key={l.id} to={`/lectii/${l.id}`} className="card card--link" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div className="flex justify-between items-center">
-              <span className={`badge badge-${l.difficulty === 'beginner' ? 'teal' : l.difficulty === 'intermediate' ? 'amber' : 'red'}`}>
-                {DIFFICULTY_LABELS[l.difficulty]}
-              </span>
-              <span className="text-sm text-muted">{l.duration} min</span>
-            </div>
-            <h4 style={{ fontFamily: 'var(--font-display)' }}>{l.title}</h4>
-            <p className="text-sm text-muted" style={{ lineHeight: 1.55 }}>{l.description.slice(0, 100)}...</p>
-            <div className="flex gap-2 flex-wrap" style={{ marginTop: 4 }}>
-              <span className="badge badge-neutral">{CATEGORY_LABELS[l.category]}</span>
-              {l.tags.slice(0, 2).map((t) => <span key={t} className="badge badge-neutral">{t}</span>)}
-            </div>
-          </Link>
-        ))}
-      </div>
+                {isOpen && (
+                  <div className="lesson-list">
+                    {chapterLessons.map((lesson) => (
+                      <Link key={lesson.id} to={`/lectii/${lesson.id}`} className="lesson-row card--link">
+                        <div>
+                          <div className="flex gap-2 flex-wrap" style={{ marginBottom: 8 }}>
+                            <span className="badge badge-neutral">{chapter.title}</span>
+                            <span className={`badge badge-${lesson.difficulty === 'beginner' ? 'teal' : lesson.difficulty === 'intermediate' ? 'amber' : 'red'}`}>
+                              {DIFFICULTY_LABELS[lesson.difficulty]}
+                            </span>
+                          </div>
+                          <h3>{lesson.title}</h3>
+                          <p className="text-sm text-muted" style={{ 
+                            marginTop: 6,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            lineHeight: 1.5
+                          }}>{lesson.description}</p>
+                        </div>
+                        <div className="lesson-row__meta">
+                          <span>{lesson.sections.length} secțiuni</span>
+                          <span>{lesson.duration} min</span>
+                          <span className="badge badge-neutral">material de învățare</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

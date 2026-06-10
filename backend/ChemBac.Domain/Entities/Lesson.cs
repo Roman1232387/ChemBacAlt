@@ -31,5 +31,8 @@ public class Lesson
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    public int? ChapterId { get; set; }
+    public Chapter? Chapter { get; set; }
+
     public ICollection<LessonSection> Sections { get; set; } = new List<LessonSection>();
 }

@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 
 interface ErrorProps {
-  code: string; icon: string; title: string; description: string;
+  code: string; icon: string; title: string; description: React.ReactNode;
   actions: React.ReactNode;
 }
 
@@ -24,9 +25,9 @@ function ErrorLayout({ code, icon, title, description, actions }: ErrorProps) {
 
 export function Page401() {
   return (
-    <ErrorLayout code="401" icon="🔐" title="Autentificare necesara"
-      description="Trebuie sa fii autentificat pentru a accesa aceasta pagina."
-      actions={<Link to="/login" className="btn btn-primary btn-lg">Autentifica-te →</Link>}
+    <ErrorLayout code="401" icon="🔐" title="Autentificare necesară"
+      description="Trebuie să fii autentificat pentru a accesa această pagină."
+      actions={<Link to="/login" className="btn btn-primary btn-lg">Autentifică-te →</Link>}
     />
   );
 }
@@ -35,23 +36,30 @@ export function Page403() {
   const navigate = useNavigate();
   return (
     <ErrorLayout code="403" icon="🚫" title="Acces interzis"
-      description="Nu ai permisiunea de a accesa aceasta resursa. Contacteaza un administrator daca crezi ca este o eroare."
+      description="Nu ai permisiunea de a accesa această resursă. Contactează un administrator dacă crezi că este o eroare."
       actions={<>
-        <button className="btn btn-secondary btn-lg" onClick={() => navigate(-1)}>← Inapoi</button>
-        <Link to="/dashboard" className="btn btn-primary btn-lg">Acasa</Link>
+        <button className="btn btn-secondary btn-lg" onClick={() => navigate(-1)}>← Înapoi</button>
+        <Link to="/dashboard" className="btn btn-primary btn-lg">Acasă</Link>
       </>}
     />
   );
 }
 
 export function Page404() {
+  const { isAuthenticated } = useAuth();
   return (
-    <ErrorLayout code="404" icon="⚗" title="Pagina nu a fost gasita"
-      description="Aceasta pagina s-a volatilizat precum un gaz nobil. Verifica adresa sau intoarce-te la lectii."
-      actions={<>
-        <Link to="/lectii"    className="btn btn-secondary btn-lg">◈ Lectii</Link>
-        <Link to="/dashboard" className="btn btn-primary btn-lg">Tablou de bord</Link>
-      </>}
+    <ErrorLayout code="404" icon="⚗" title="Pagina nu a fost găsită"
+      description={
+        <>
+          Această pagină s-a volatilizat precum un gaz nobil.<br />
+          Pagina pe care o cauți nu există sau a fost mutată.
+        </>
+      }
+      actions={
+        <Link to={isAuthenticated ? "/dashboard" : "/login"} className="btn btn-primary btn-lg">
+          ← Înapoi acasă
+        </Link>
+      }
     />
   );
 }
@@ -59,11 +67,11 @@ export function Page404() {
 export function Page500() {
   const navigate = useNavigate();
   return (
-    <ErrorLayout code="500" icon="⚠" title="Eroare interna de server"
-      description="A aparut o eroare neasteptata. Incearca din nou mai tarziu sau reincarca pagina."
+    <ErrorLayout code="500" icon="⚠" title="Eroare internă de server"
+      description="A apărut o eroare neașteptată. Încearcă din nou mai târziu sau reîncarcă pagina."
       actions={<>
-        <button className="btn btn-secondary btn-lg" onClick={() => navigate(0)}>↻ Reincarcare</button>
-        <Link to="/dashboard" className="btn btn-primary btn-lg">Acasa</Link>
+        <button className="btn btn-secondary btn-lg" onClick={() => navigate(0)}>↻ Reîncărcare</button>
+        <Link to="/dashboard" className="btn btn-primary btn-lg">Acasă</Link>
       </>}
     />
   );

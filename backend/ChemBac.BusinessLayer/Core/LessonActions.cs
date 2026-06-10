@@ -1,7 +1,7 @@
 using ChemBac.DataAccess.Context;
 using ChemBac.Domain.Entities;
 using ChemBac.Domain.Models.Lesson;
-using ChemBac.Domain.Models.Responces;
+using ChemBac.Domain.Models.Responses;
 
 namespace ChemBac.BusinessLayer.Core;
 
@@ -54,7 +54,7 @@ public class LessonActions
         return dbData == null ? null : MapToDto(dbData);
     }
 
-    protected ActionResponce CreateLessonActionExecution(LessonDto data)
+    protected ActionResponse CreateLessonActionExecution(LessonDto data)
     {
         var contentValidation = ValidateLessonContent(data);
         if (!contentValidation.IsSuccess) return contentValidation;
@@ -67,6 +67,7 @@ public class LessonActions
             var lesson = new Lesson
             {
                 Title       = data.Title,
+                ChapterId   = data.ChapterId,
                 Category    = data.Category,
                 Difficulty  = data.Difficulty,
                 Description = data.Description,
@@ -78,7 +79,10 @@ public class LessonActions
                     Title   = s.Title,
                     Content = s.Content,
                     Formula = s.Formula,
-                    Order   = s.Order
+                    Order   = s.Order,
+                    Type    = s.Type,
+                    ImageUrl = s.ImageUrl,
+                    TableJson = s.TableJson
                 }).ToList()
             };
 
@@ -86,23 +90,24 @@ public class LessonActions
             db.SaveChanges();
         }
 
-        return new ActionResponce { IsSuccess = true, Message = "Lectia a fost creata cu succes." };
+        return new ActionResponse { IsSuccess = true, Message = "Lectia a fost creata cu succes." };
     }
 
-    protected ActionResponce UpdateLessonActionExecution(LessonDto data)
+    protected ActionResponse UpdateLessonActionExecution(LessonDto data)
     {
         var contentValidation = ValidateLessonContent(data);
         if (!contentValidation.IsSuccess) return contentValidation;
 
         var existing = GetLessonEntityById(data.Id);
         if (existing == null)
-            return new ActionResponce { IsSuccess = false, Message = "Lectia nu a fost gasita." };
+            return new ActionResponse { IsSuccess = false, Message = "Lectia nu a fost gasita." };
 
         using (var db = new LessonContext())
         {
             db.Entry(existing).Collection(l => l.Sections).Load();
 
             existing.Title       = data.Title;
+            existing.ChapterId   = data.ChapterId;
             existing.Category    = data.Category;
             existing.Difficulty  = data.Difficulty;
             existing.Description = data.Description;
@@ -116,21 +121,24 @@ public class LessonActions
                 Title   = s.Title,
                 Content = s.Content,
                 Formula = s.Formula,
-                Order   = s.Order
+                Order   = s.Order,
+                Type    = s.Type,
+                ImageUrl = s.ImageUrl,
+                TableJson = s.TableJson
             }).ToList();
 
             db.Lessons.Update(existing);
             db.SaveChanges();
         }
 
-        return new ActionResponce { IsSuccess = true, Message = "Lectia a fost actualizata cu succes." };
+        return new ActionResponse { IsSuccess = true, Message = "Lectia a fost actualizata cu succes." };
     }
 
-    protected ActionResponce DeleteLessonActionExecution(int id)
+    protected ActionResponse DeleteLessonActionExecution(int id)
     {
         var existing = GetLessonEntityById(id);
         if (existing == null)
-            return new ActionResponce { IsSuccess = false, Message = "Lectia nu a fost gasita." };
+            return new ActionResponse { IsSuccess = false, Message = "Lectia nu a fost gasita." };
 
         existing.IsDeleted = true;
         existing.UpdatedAt = DateTime.UtcNow;
@@ -141,7 +149,7 @@ public class LessonActions
             db.SaveChanges();
         }
 
-        return new ActionResponce { IsSuccess = true, Message = "Lectia a fost stearsa." };
+        return new ActionResponse { IsSuccess = true, Message = "Lectia a fost stearsa." };
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────
@@ -152,41 +160,42 @@ public class LessonActions
         return db.Lessons.FirstOrDefault(l => l.Id == id && !l.IsDeleted);
     }
 
-    private ActionResponce ValidateLessonTitle(string title)
+    private ActionResponse ValidateLessonTitle(string title)
     {
         using var db = new LessonContext();
         var exists = db.Lessons
             .Any(l => l.Title.ToLower() == title.ToLower() && !l.IsDeleted);
 
         if (exists)
-            return new ActionResponce { IsSuccess = false, Message = "O lectie cu acest titlu exista deja." };
+            return new ActionResponse { IsSuccess = false, Message = "O lectie cu acest titlu exista deja." };
 
-        return new ActionResponce { IsSuccess = true, Message = "Titlu valid." };
+        return new ActionResponse { IsSuccess = true, Message = "Titlu valid." };
     }
 
-    private static ActionResponce ValidateLessonContent(LessonDto data)
+    private static ActionResponse ValidateLessonContent(LessonDto data)
     {
         if (string.IsNullOrWhiteSpace(data.Title) || data.Title.Trim().Length < 5)
-            return new ActionResponce { IsSuccess = false, Message = "Titlul lectiei trebuie sa aiba minim 5 caractere." };
+            return new ActionResponse { IsSuccess = false, Message = "Titlul lectiei trebuie sa aiba minim 5 caractere." };
 
         if (string.IsNullOrWhiteSpace(data.Description) || data.Description.Trim().Length < 10)
-            return new ActionResponce { IsSuccess = false, Message = "Descrierea lectiei trebuie sa aiba minim 10 caractere." };
+            return new ActionResponse { IsSuccess = false, Message = "Descrierea lectiei trebuie sa aiba minim 10 caractere." };
 
         if (data.Duration < 5)
-            return new ActionResponce { IsSuccess = false, Message = "Durata lectiei trebuie sa fie de minim 5 minute." };
+            return new ActionResponse { IsSuccess = false, Message = "Durata lectiei trebuie sa fie de minim 5 minute." };
 
         if (data.Sections.Count == 0)
-            return new ActionResponce { IsSuccess = false, Message = "Lectia trebuie sa contina cel putin o sectiune." };
+            return new ActionResponse { IsSuccess = false, Message = "Lectia trebuie sa contina cel putin o sectiune." };
 
         if (data.Sections.Any(s => string.IsNullOrWhiteSpace(s.Title) || string.IsNullOrWhiteSpace(s.Content)))
-            return new ActionResponce { IsSuccess = false, Message = "Fiecare sectiune trebuie sa aiba titlu si continut." };
+            return new ActionResponse { IsSuccess = false, Message = "Fiecare sectiune trebuie sa aiba titlu si continut." };
 
-        return new ActionResponce { IsSuccess = true, Message = "Continut valid." };
+        return new ActionResponse { IsSuccess = true, Message = "Continut valid." };
     }
 
     private static LessonDto MapToDto(Lesson l) => new LessonDto
     {
         Id          = l.Id,
+        ChapterId   = l.ChapterId,
         Title       = l.Title,
         Category    = l.Category,
         Difficulty  = l.Difficulty,
@@ -200,7 +209,10 @@ public class LessonActions
             Title   = s.Title,
             Content = s.Content,
             Formula = s.Formula,
-            Order   = s.Order
+            Order   = s.Order,
+            Type    = s.Type,
+            ImageUrl = s.ImageUrl,
+            TableJson = s.TableJson
         }).ToList()
     };
 }

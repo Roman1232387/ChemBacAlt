@@ -1,101 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { TOPIC_CATEGORY_LABELS, TOPIC_DIFF_LABELS } from '../models/Topic';
-import type { Topic, TopicDifficulty } from '../models/Topic';
-
-const topics: Topic[] = [
-    {
-        id: 'top1',
-        title: 'Structura Atomului',
-        category: 'structura-atomului',
-        difficulty: 'beginner',
-        icon: 'A',
-        shortDescription: 'Nucleu, electroni, configuratie electronica si proprietati periodice.',
-        relatedLessonIds: [],
-        keyPoints: ['Atomul contine protoni, neutroni si electroni.', 'Z indica numarul de protoni.'],
-        commonMistakes: ['Confundarea numarului atomic cu numarul de masa.'],
-        examTips: ['Verifica intotdeauna suma electronilor cu Z.'],
-        subsections: [{ id: 'top1-1', title: 'Nucleul atomic', content: 'Nucleul contine protoni si neutroni.', formulas: [{ label: 'Numar de masa', formula: 'A = Z + N' }] }],
-    },
-    {
-        id: 'top2',
-        title: 'Legaturi Chimice',
-        category: 'chimie-anorganica',
-        difficulty: 'intermediate',
-        icon: 'L',
-        shortDescription: 'Legatura ionica, covalenta si metalica.',
-        relatedLessonIds: [],
-        keyPoints: ['Legatura ionica presupune transfer de electroni.', 'Legatura covalenta presupune punere in comun.'],
-        commonMistakes: ['Confundarea legaturii ionice cu cea covalent-polara.'],
-        examTips: ['Foloseste diferenta de electronegativitate pentru clasificare.'],
-        subsections: [{ id: 'top2-1', title: 'Legatura ionica', content: 'Apare intre metale si nemetale prin transfer de electroni.' }],
-    },
-    {
-        id: 'top3',
-        title: 'Reactii Redox',
-        category: 'chimie-anorganica',
-        difficulty: 'intermediate',
-        icon: 'R',
-        shortDescription: 'Transfer de electroni, numere de oxidare si bilant electronic.',
-        relatedLessonIds: ['l1'],
-        keyPoints: ['Oxidarea inseamna pierdere de electroni.', 'Reducerea inseamna castig de electroni.'],
-        commonMistakes: ['Inversarea oxidantului cu reducatorul.'],
-        examTips: ['Egalizeaza electronii cedati cu cei acceptati.'],
-        subsections: [{ id: 'top3-1', title: 'Numarul de oxidare', content: 'Numarul de oxidare ajuta la identificarea proceselor redox.' }],
-    },
-    {
-        id: 'top4',
-        title: 'Acizi si Baze',
-        category: 'chimie-anorganica',
-        difficulty: 'beginner',
-        icon: 'pH',
-        shortDescription: 'Teoria Bronsted-Lowry, pH, neutralizare si indicatori.',
-        relatedLessonIds: ['l2'],
-        keyPoints: ['Acidul doneaza protoni.', 'Baza accepta protoni.', 'pH = -log[H3O+].'],
-        commonMistakes: ['Calculul pH-ului fara semnul minus.'],
-        examTips: ['pH sub 7 este acid, peste 7 este bazic.'],
-        subsections: [{ id: 'top4-1', title: 'Calculul pH-ului', content: 'pH-ul masoara concentratia ionilor hidroniu.', formulas: [{ label: 'pH', formula: 'pH = -log[H3O+]' }] }],
-    },
-    {
-        id: 'top5',
-        title: 'Hidrocarburi',
-        category: 'chimie-organica',
-        difficulty: 'intermediate',
-        icon: 'C',
-        shortDescription: 'Alcani, alchene si alchine: nomenclatura, proprietati si reactii.',
-        relatedLessonIds: ['l3'],
-        keyPoints: ['Alcanii dau substitutie.', 'Alchenele dau aditie.', 'Alchinele contin tripla legatura.'],
-        commonMistakes: ['Confundarea formulelor generale.'],
-        examTips: ['Identifica mai intai catena principala.'],
-        subsections: [{ id: 'top5-1', title: 'Alcani', content: 'Alcanii sunt hidrocarburi saturate.', formulas: [{ label: 'Formula', formula: 'CnH2n+2' }] }],
-    },
-    {
-        id: 'top6',
-        title: 'Echilibrul Chimic',
-        category: 'chimie-anorganica',
-        difficulty: 'advanced',
-        icon: 'K',
-        shortDescription: 'Constanta de echilibru si principiul Le Chatelier.',
-        relatedLessonIds: [],
-        keyPoints: ['Echilibrul chimic este dinamic.', 'Kc depinde de temperatura.'],
-        commonMistakes: ['Includerea solidelor pure in Kc.'],
-        examTips: ['Catalizatorul nu modifica pozitia echilibrului.'],
-        subsections: [{ id: 'top6-1', title: 'Constanta Kc', content: 'Kc exprima raportul concentratiilor la echilibru.' }],
-    },
-    {
-        id: 'top7',
-        title: 'Compusi Organici cu Functiuni',
-        category: 'chimie-organica',
-        difficulty: 'advanced',
-        icon: 'F',
-        shortDescription: 'Alcooli, acizi carboxilici, esteri, amine si aminoacizi.',
-        relatedLessonIds: [],
-        keyPoints: ['Alcoolii contin grupa -OH.', 'Acizii carboxilici contin grupa -COOH.'],
-        commonMistakes: ['Confundarea alcoolilor primari cu cei secundari la oxidare.'],
-        examTips: ['Esterificarea produce ester si apa.'],
-        subsections: [{ id: 'top7-1', title: 'Alcooli', content: 'Alcoolii reactioneaza prin esterificare, deshidratare si oxidare.' }],
-    },
-];
+import type { TopicDifficulty } from '../models/Topic';
+import { TOPICS } from '../models/TopicData';
 
 const diffBadge: Record<TopicDifficulty, string> = {
     beginner: 'badge-teal',
@@ -105,7 +12,7 @@ const diffBadge: Record<TopicDifficulty, string> = {
 
 export function TopicDetailPage() {
     const { id } = useParams<{ id: string }>();
-    const topic = topics.find((t) => t.id === id);
+    const topic = TOPICS.find((t) => t.id === id);
     const [openSection, setOpenSection] = useState<string | null>(
         topic?.subsections[0]?.id ?? null
     );
@@ -147,7 +54,7 @@ export function TopicDetailPage() {
                         <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
                             <span className={`badge ${diffBadge[topic.difficulty]}`}>{TOPIC_DIFF_LABELS[topic.difficulty]}</span>
                             <span className="badge badge-neutral">{TOPIC_CATEGORY_LABELS[topic.category]}</span>
-                            <span className="badge badge-neutral">{topic.subsections.length} secțiuni</span>
+                            <span className="badge badge-neutral">⏱ {topic.estimatedTime} min</span>
                         </div>
                         <h2 style={{ fontFamily: 'var(--font-display)', marginBottom: 8 }}>{topic.title}</h2>
                         <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{topic.shortDescription}</p>
@@ -181,14 +88,14 @@ export function TopicDetailPage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {/* Exam Tips */}
-                    <div className="card" style={{ borderColor: 'rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.03)' }}>
-                        <h4 style={{ fontFamily: 'var(--font-display)', marginBottom: 10, color: 'var(--amber)' }}>
-                            💡 Sfaturi BAC
+                    <div className="card" style={{ borderColor: 'rgba(0,212,170,0.3)', background: 'rgba(0,212,170,0.03)' }}>
+                        <h4 style={{ fontFamily: 'var(--font-display)', marginBottom: 10, color: 'var(--teal)' }}>
+                            ✅ Sfaturi BAC
                         </h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {topic.examTips.map((tip, i) => (
-                                <div key={i} style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', lineHeight: 1.5, display: 'flex', gap: 8 }}>
-                                    <span style={{ color: 'var(--amber)', flexShrink: 0 }}>→</span>
+                                <div key={i} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, display: 'flex', gap: 10 }}>
+                                    <span style={{ color: 'var(--teal)', flexShrink: 0, fontWeight: 'bold' }}>✓</span>
                                     {tip}
                                 </div>
                             ))}
@@ -198,12 +105,12 @@ export function TopicDetailPage() {
                     {/* Common Mistakes */}
                     <div className="card" style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.03)' }}>
                         <h4 style={{ fontFamily: 'var(--font-display)', marginBottom: 10, color: 'var(--red)' }}>
-                            ⚠ Greșeli frecvente
+                            ❌ Greșeli frecvente
                         </h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {topic.commonMistakes.map((m, i) => (
-                                <div key={i} style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', lineHeight: 1.5, display: 'flex', gap: 8 }}>
-                                    <span style={{ color: 'var(--red)', flexShrink: 0 }}>✗</span>
+                                <div key={i} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, display: 'flex', gap: 10 }}>
+                                    <span style={{ color: 'var(--red)', flexShrink: 0, fontWeight: 'bold' }}>✗</span>
                                     {m}
                                 </div>
                             ))}
@@ -211,6 +118,67 @@ export function TopicDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Key Formulas */}
+            {topic.keyFormulas.length > 0 && (
+                <div className="card" style={{ marginBottom: 24 }}>
+                    <h4 style={{ fontFamily: 'var(--font-display)', marginBottom: 16, color: 'var(--teal)' }}>
+                        📐 Formule Cheie
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                        {topic.keyFormulas.map((f, i) => (
+                            <div key={i} style={{ 
+                                background: 'var(--bg-elevated)', 
+                                padding: '12px 16px', 
+                                borderRadius: 'var(--r-md)',
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: '1rem',
+                                color: 'var(--text-primary)',
+                                textAlign: 'center',
+                                border: '1px solid var(--border)'
+                            }}>
+                                {f}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Practice Problems */}
+            {topic.practiceProblems.length > 0 && (
+                <div style={{ marginBottom: 32 }}>
+                    <h4 style={{ fontFamily: 'var(--font-display)', marginBottom: 16 }}>
+                        📝 Probleme Rezolvate
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {topic.practiceProblems.map((p, i) => (
+                            <details key={i} className="admin-accordion" style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
+                                <summary style={{ padding: '16px', cursor: 'pointer', fontWeight: 700, background: 'var(--bg-elevated)', listStyle: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>{p.title}</span>
+                                    <span style={{ color: 'var(--teal)', fontSize: '0.8rem' }}>Vezi rezolvarea ▼</span>
+                                </summary>
+                                <div style={{ padding: '20px', background: 'var(--bg-card)', borderTop: '1px solid var(--border)' }}>
+                                    <div style={{ marginBottom: 16 }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>Pași:</div>
+                                        <ol style={{ paddingLeft: 20, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                            {p.steps.map((step, si) => <li key={si} style={{ marginBottom: 4 }}>{step}</li>)}
+                                        </ol>
+                                    </div>
+                                    <div style={{ 
+                                        padding: '12px 16px', 
+                                        background: 'rgba(0,212,170,0.05)', 
+                                        borderLeft: '4px solid var(--teal)',
+                                        borderRadius: '0 var(--r-sm) var(--r-sm) 0'
+                                    }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 4 }}>Soluție:</div>
+                                        <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{p.solution}</div>
+                                    </div>
+                                </div>
+                            </details>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Accordion Subsections */}
             <h3 style={{ fontFamily: 'var(--font-display)', marginBottom: 16 }}>

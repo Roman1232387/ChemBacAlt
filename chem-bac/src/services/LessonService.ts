@@ -3,6 +3,7 @@ import type { Lesson, LessonFormData } from '../models/Lesson';
 
 const mapLesson = (data: any): Lesson => ({
   id: String(data.id),
+  chapterId: data.chapterId ? String(data.chapterId) : null,
   title: data.title,
   category: data.category,
   difficulty: data.difficulty,
@@ -12,7 +13,11 @@ const mapLesson = (data: any): Lesson => ({
     id: String(s.id),
     title: s.title,
     content: s.content,
-    formula: s.formula,
+    formula: s.formula ?? '',
+    order: s.order,
+    type: s.type ?? 'text',
+    imageUrl: s.imageUrl ?? null,
+    tableJson: s.tableJson ?? null,
   })),
   tags: [],
   createdAt: data.createdAt,
@@ -23,8 +28,11 @@ const mapSectionForApi = (section: Lesson['sections'][number], index: number) =>
   id: Number(section.id) || 0,
   title: section.title,
   content: section.content,
-  formula: section.formula,
+  formula: section.formula ?? '',
   order: index + 1,
+  type: section.type ?? 'text',
+  imageUrl: section.imageUrl ?? null,
+  tableJson: section.tableJson ?? null,
 });
 
 const assertLessonPayload = (data: any): void => {
@@ -47,6 +55,7 @@ export const LessonService = {
   async create(data: LessonFormData): Promise<Lesson> {
     const response = await axiosInstance.post('/lesson', {
       id: 0,
+      chapterId: data.chapterId ? Number(data.chapterId) : null,
       title: data.title,
       category: data.category,
       difficulty: data.difficulty,
@@ -63,6 +72,7 @@ export const LessonService = {
   async update(id: string, data: LessonFormData): Promise<Lesson> {
     const response = await axiosInstance.put('/lesson', {
       id: Number(id),
+      chapterId: data.chapterId ? Number(data.chapterId) : null,
       title: data.title,
       category: data.category,
       difficulty: data.difficulty,

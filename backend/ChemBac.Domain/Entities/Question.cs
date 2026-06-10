@@ -23,4 +23,5 @@ public class Question
     public Test Test { get; set; } = null!;
 
     public ICollection<QuestionOption> Options { get; set; } = new List<QuestionOption>();
+    public ICollection<QuestionStep> Steps { get; set; } = new List<QuestionStep>();
 }

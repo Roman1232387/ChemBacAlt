@@ -1,6 +1,6 @@
 using ChemBac.DataAccess.Context;
 using ChemBac.Domain.Entities;
-using ChemBac.Domain.Models.Responces;
+using ChemBac.Domain.Models.Responses;
 using ChemBac.Domain.Models.Result;
 
 namespace ChemBac.BusinessLayer.Core;
@@ -19,6 +19,15 @@ public class ResultActions
             .ToList();
     }
 
+    protected List<ResultDto> GetAllResultsActionExecution()
+    {
+        using var db = new ResultContext();
+        return db.Results
+            .ToList()
+            .Select(MapToDto)
+            .ToList();
+    }
+
     protected ResultDto? GetResultByIdActionExecution(int id)
     {
         using var db = new ResultContext();
@@ -26,7 +35,7 @@ public class ResultActions
         return result == null ? null : MapToDto(result);
     }
 
-    protected ActionResponce SubmitResultActionExecution(ResultDto data)
+    protected ActionResponse SubmitResultActionExecution(ResultDto data)
     {
         using var db = new ResultContext();
         var result = new Result
@@ -45,7 +54,7 @@ public class ResultActions
         };
         db.Results.Add(result);
         db.SaveChanges();
-        return new ActionResponce { IsSuccess = true, Message = "Rezultatul a fost salvat." };
+        return new ActionResponse { IsSuccess = true, Message = "Rezultatul a fost salvat.", Id = result.Id };
     }
 
     private static ResultDto MapToDto(Result r) => new ResultDto

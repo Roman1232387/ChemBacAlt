@@ -14,6 +14,7 @@ dist/
 # Sensitive
 .env
 init.sql
+backend/ChemBac.API/appsettings.Development.json
 
 # Frontend cache
 **/.vite/

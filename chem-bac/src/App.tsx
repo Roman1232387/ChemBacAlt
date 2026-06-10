@@ -1,5 +1,5 @@
-import React from 'react';
-import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
+import React, { useEffect } from 'react';
+import {BrowserRouter, Routes, Route, Navigate, useLocation} from 'react-router-dom';
 import {AuthProvider} from './context/AuthContext';
 import { ProtectedLayout, PublicLayout } from './layouts/layouts';
 import {ProtectedRoute, AdminRoute} from './routes/guards';
@@ -17,12 +17,52 @@ import {TestsPage} from './pages/TestsPage';
 import {TakeTestPage} from './pages/TakeTestPage';
 import {MyResultsPage} from './pages/MyResultsPage';
 import {ResultDetailPage} from './pages/ResultDetailPage';
+import {ProfilePage} from './pages/ProfilePage';
+import {SettingsPage} from './pages/SettingsPage';
 import {AdminTestsPage} from './pages/admin/AdminTestsPage';
 import {AdminLessonsPage} from './pages/admin/AdminLessonsPage';
+import {ResourcesPage} from './pages/ResourcesPage';
+
+function PageTitleUpdater() {
+    const location = useLocation();
+
+    useEffect(() => {
+        const titleMap: Record<string, string> = {
+            '/dashboard': 'Acasă | ChemBAC',
+            '/lectii': 'Lecții | ChemBAC',
+            '/teme': 'Teme BAC | ChemBAC',
+            '/teste': 'Teste | ChemBAC',
+            '/rezultate': 'Rezultatele mele | ChemBAC',
+            '/profil': 'Profil | ChemBAC',
+            '/setari': 'Setări | ChemBAC',
+            '/resurse': 'Resurse | ChemBAC',
+            '/admin/lectii': 'Admin — Lecții | ChemBAC',
+            '/admin/teste': 'Admin — Teste | ChemBAC',
+            '/login': 'Autentificare | ChemBAC',
+            '/register': 'Înregistrare | ChemBAC',
+        };
+
+        const path = location.pathname;
+        let title = titleMap[path];
+
+        if (!title) {
+            if (path.startsWith('/lectii/')) title = 'Lecție | ChemBAC';
+            else if (path.startsWith('/teme/')) title = 'Temă | ChemBAC';
+            else if (path.startsWith('/teste/')) title = 'Susține test | ChemBAC';
+            else if (path.startsWith('/rezultate/')) title = 'Detalii rezultat | ChemBAC';
+            else title = 'ChemBAC';
+        }
+
+        document.title = title;
+    }, [location.pathname]);
+
+    return null;
+}
 
 export default function App() {
     return (
         <BrowserRouter>
+            <PageTitleUpdater />
             <AuthProvider>
                 <Routes>
 
@@ -42,11 +82,14 @@ export default function App() {
                             <Route path="/lectii" element={<LessonsPage/>}/>
                             <Route path="/lectii/:id" element={<LessonDetailPage/>}/>
                             <Route path="/teme" element={<TopicsPage/>}/>
+                            <Route path="/resurse" element={<ResourcesPage/>}/>
                             <Route path="/teme/:id" element={<TopicDetailPage/>}/>
                             <Route path="/teste" element={<TestsPage/>}/>
                             <Route path="/teste/:id" element={<TakeTestPage/>}/>
                             <Route path="/rezultate" element={<MyResultsPage/>}/>
                             <Route path="/rezultate/:id" element={<ResultDetailPage/>}/>
+                            <Route path="/profil" element={<ProfilePage/>}/>
+                            <Route path="/setari" element={<SettingsPage/>}/>
                         </Route>
                     </Route>
 

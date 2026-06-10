@@ -14,6 +14,12 @@ export interface TopicSubsection {
     tip?: string;
 }
 
+export interface PracticeProblem {
+    title: string;
+    steps: string[];
+    solution: string;
+}
+
 export interface Topic {
     id: string;
     title: string;
@@ -26,6 +32,10 @@ export interface Topic {
     commonMistakes: string[];
     examTips: string[];
     relatedLessonIds: string[];
+    estimatedTime: number;
+    keyFormulas: string[];
+    concepts: string[];
+    practiceProblems: PracticeProblem[];
 }
 
 export const TOPIC_CATEGORY_LABELS: Record<TopicCategory, string> = {
