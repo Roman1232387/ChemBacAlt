@@ -1,24 +1,40 @@
 using ChemBac.DataAccess;
 using ChemBac.DataAccess.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.RateLimiting;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-DbSession.ConnectionString =
-    builder.Configuration.GetConnectionString("DefaultConnection");
+// Configurare Connection String din Environment sau AppSettings
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+if (!string.IsNullOrEmpty(dbPassword) && !string.IsNullOrEmpty(connectionString))
+{
+    // Înlocuim parola din connection string dacă este setată în mediu
+    var builderConn = new Npgsql.NpgsqlConnectionStringBuilder(connectionString)
+    {
+        Password = dbPassword
+    };
+    connectionString = builderConn.ConnectionString;
+}
+DbSession.ConnectionString = connectionString;
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var jwtSecret = jwtSettings["Secret"] ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
+// Configurare JWT din Environment sau AppSettings
+var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") ?? builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrEmpty(jwtSecret)) throw new InvalidOperationException("JWT Secret is not configured.");
+
 var signingKey = new SymmetricSecurityKey(SHA256.HashData(Encoding.UTF8.GetBytes(jwtSecret)));
 
 builder.Services
@@ -31,22 +47,60 @@ builder.Services
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = signingKey,
             ClockSkew = TimeSpan.Zero
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                context.Token = context.Request.Cookies["auth_token"];
+                return Task.CompletedTask;
+            }
         };
     });
 
 builder.Services.AddAuthorization();
 
+// Rate Limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? httpContext.Request.Headers.Host.ToString(),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    options.AddPolicy("verify", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? httpContext.Request.Headers.Host.ToString(),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 30,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
+
+// CORS din appsettings
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -64,6 +118,14 @@ using (var db = new TestContext())
 using (var db = new ResultContext())
      db.Database.Migrate();
 
+using (var db = new FileContext())
+     db.Database.Migrate();
+
+if (app.Environment.IsDevelopment())
+{
+    SeedData.SeedInitialData();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -71,7 +133,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("FrontendPolicy");
+app.UseRateLimiter();
 app.UseHttpsRedirection();
+
+var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+Directory.CreateDirectory(uploadsPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
